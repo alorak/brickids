@@ -108,6 +108,49 @@ export class BrickWorld {
     }
     return null;
   }
+  /** Place a newly requested part directly into the scene.
+   * The requested X/Z is aligned to the visible baseplate grid, then the part
+   * is lowered onto the first physical surface and released. Nearby grid cells
+   * are tried when the requested column cannot accept the part.
+   */
+  placeNew(spec: BrickSpec, color: string, target = new T.Vector3()) {
+    if (this.bricks.length >= 250) return null;
+    const socket = connectors(spec, "bottom")[0] ?? { x: 0, z: 0 };
+    const aligned = new T.Vector3(
+      nearestBaseplateStud(target.x + socket.x) - socket.x,
+      0,
+      nearestBaseplateStud(target.z + socket.z) - socket.z,
+    );
+    const brick = this.spawnHeld(
+      spec,
+      color,
+      new T.Vector3(aligned.x, 6, aligned.z),
+    );
+    if (!brick) return null;
+
+    for (let ring = 0; ring <= 10; ring++) {
+      const candidates: T.Vector3[] = [];
+      for (let x = -ring; x <= ring; x++)
+        for (let z = -ring; z <= ring; z++) {
+          if (Math.max(Math.abs(x), Math.abs(z)) !== ring) continue;
+          candidates.push(
+            new T.Vector3(aligned.x + x, 0, aligned.z + z),
+          );
+        }
+      candidates.sort(
+        (a, b) => a.distanceToSquared(aligned) - b.distanceToSquared(aligned),
+      );
+      for (const candidate of candidates) {
+        if (!this.snapDown(brick.id, candidate)) continue;
+        this.drop(brick.id, true);
+        return brick;
+      }
+    }
+
+    this.remove(brick.id);
+    return null;
+  }
+
   add(
     spec: BrickSpec,
     color: string,
@@ -225,6 +268,24 @@ export class BrickWorld {
       if (this.elapsed > time) this.quietUntil.delete(id);
     this.sync();
     for (const b of [...this.bricks]) if (b.position.y < -30) this.remove(b.id);
+
+    // A loose brick should never remain parked on its side or upside down.
+    // Wait until Rapier has put it to sleep so active motion is not interrupted,
+    // then recover exactly one brick per step to the nearest clear grid cell.
+    if (!this.held.size) {
+      const fallen = this.bricks.find((brick) => {
+        if (this.links.some((link) => link.a === brick.id || link.b === brick.id))
+          return false;
+        if (!brick.body.isSleeping()) return false;
+        const up = new T.Vector3(0, 1, 0).applyQuaternion(brick.rotation);
+        return up.y < Math.cos(Math.PI / 12);
+      });
+      if (fallen) {
+        this.grab(fallen.id);
+        this.recoverUprightBaseplate(fallen.id);
+        this.release();
+      }
+    }
   }
   get(id: number) {
     return this.bricks.find((b) => b.id === id)!;
@@ -710,6 +771,99 @@ export class BrickWorld {
     return this.transform(id, target, rotation);
   }
 
+  /** Recovery for a part/assembly that ended up on its side or upside down.
+   * Find the nearest collision-free baseplate grid position, rotate the lowest
+   * socket-bearing brick upright to the nearest quarter turn, and teleport the
+   * held assembly there before release. This is deliberately a recovery path,
+   * not normal drag motion.
+   */
+  recoverUprightBaseplate(id: number, searchRings = 12) {
+    if (!this.held.has(id)) return false;
+
+    let contact: Brick | null = null;
+    let lowest = Infinity;
+    for (const member of this.held) {
+      const brick = this.get(member);
+      if (!connectors(brick.spec, "bottom").length) continue;
+      const bottom = bottomOf(this.obb(brick));
+      if (bottom < lowest) {
+        lowest = bottom;
+        contact = brick;
+      }
+    }
+    if (!contact) return false;
+
+    const up = new T.Vector3(0, 1, 0).applyQuaternion(contact.rotation);
+    if (up.y >= Math.cos(Math.PI / 12)) return false;
+
+    const quarterTurns = [0, 1, 2, 3].map((quarter) =>
+      new T.Quaternion().setFromAxisAngle(
+        new T.Vector3(0, 1, 0),
+        quarter * (Math.PI / 2),
+      ),
+    );
+    const desiredContactRotation = quarterTurns.reduce((best, candidate) =>
+      candidate.angleTo(contact!.rotation) < best.angleTo(contact!.rotation)
+        ? candidate
+        : best,
+    );
+    const delta = desiredContactRotation
+      .clone()
+      .multiply(contact.rotation.clone().invert());
+
+    const socket = connectors(contact.spec, "bottom")[0];
+    const projectedSocket = new T.Vector3(socket.x, 0, socket.z)
+      .applyQuaternion(desiredContactRotation)
+      .add(contact.position);
+    const baseContactPosition = new T.Vector3(
+      contact.position.x +
+        nearestBaseplateStud(projectedSocket.x) -
+        projectedSocket.x,
+      contact.spec.height / 2,
+      contact.position.z +
+        nearestBaseplateStud(projectedSocket.z) -
+        projectedSocket.z,
+    );
+
+    for (let ring = 0; ring <= searchRings; ring++) {
+      const offsets: T.Vector3[] = [];
+      for (let x = -ring; x <= ring; x++)
+        for (let z = -ring; z <= ring; z++) {
+          if (Math.max(Math.abs(x), Math.abs(z)) !== ring) continue;
+          offsets.push(new T.Vector3(x, 0, z));
+        }
+      offsets.sort((a, b) => a.lengthSq() - b.lengthSq());
+
+      for (const offset of offsets) {
+        const desiredContactPosition = baseContactPosition.clone().add(offset);
+        const poses = new Map<number, { p: T.Vector3; q: T.Quaternion }>();
+        for (const member of this.held) {
+          const brick = this.get(member);
+          poses.set(member, {
+            p: brick.position
+              .clone()
+              .sub(contact.position)
+              .applyQuaternion(delta)
+              .add(desiredContactPosition),
+            q: delta.clone().multiply(brick.rotation),
+          });
+        }
+        if (!this.clearAt(poses)) continue;
+
+        for (const [member, { p, q }] of poses) {
+          const brick = this.get(member);
+          brick.body.setTranslation(p, true);
+          brick.body.setRotation(q, true);
+          brick.body.setNextKinematicTranslation(p);
+          brick.body.setNextKinematicRotation(q);
+        }
+        this.sync();
+        return true;
+      }
+    }
+    return false;
+  }
+
   /** Release a held assembly. Prefer a real brick mating pose; when baseplate
    * mode is active, otherwise align a floor-level piece to the baseplate studs.
    */
@@ -719,7 +873,8 @@ export class BrickWorld {
     // a piece that is already resting near compatible studs may straighten
     // from up to 15° of pitch/roll, but distance and yaw limits stay unchanged.
     if (this.press(id, Math.PI / 12)) return true;
-    const snapped = baseplate && this.snapBaseplate(id, Math.PI / 12);
+    let snapped = baseplate && this.snapBaseplate(id, Math.PI / 12);
+    if (!snapped && baseplate) snapped = this.recoverUprightBaseplate(id);
     this.release();
     return snapped;
   }

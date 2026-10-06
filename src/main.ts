@@ -265,8 +265,9 @@ function translate() {
 const previewPart = partPreviews();
 const corePartIds = ["1x2", "1x4", "2x2", "2x4"] as const;
 let morePartsOpen = false;
+let libraryDragging = false;
 function partCard(s: (typeof catalog)[number]) {
-  return `<button class="brick-card" data-spec="${s.id}" aria-label="${text("add")} ${partLabel(s, language)}"><img class="part-preview" src="${previewPart(s, currentColor)}" alt="" draggable="false"><div class="card-description"><strong>${partLabel(s, language)}</strong><span class="add-circle">+</span></div></button>`;
+  return `<button class="brick-card" draggable="true" data-spec="${s.id}" aria-label="${text("add")} ${partLabel(s, language)}"><img class="part-preview" src="${previewPart(s, currentColor)}" alt="" draggable="false"><div class="card-description"><strong>${partLabel(s, language)}</strong><span class="add-circle">+</span></div></button>`;
 }
 function renderCards() {
   const core = corePartIds
@@ -278,23 +279,32 @@ function renderCards() {
   $("#more-cards").hidden = !morePartsOpen;
   $("#more-parts").classList.toggle("open", morePartsOpen);
   $("#more-parts").setAttribute("aria-expanded", String(morePartsOpen));
-  document.querySelectorAll<HTMLElement>("[data-spec]").forEach(
-    (el) =>
-      (el.onclick = () => {
-        if (world.bricks.length >= 250) return toast(text("limit"));
-        cancelPress();
-        const spec = catalog.find((s) => s.id === el.dataset.spec)!;
-        const b = world.spawnHeld(
-          spec,
-          currentColor,
-          new T.Vector3(controls.target.x, 6, controls.target.z),
-        );
-        if (!b) return toast(text("spawnBlocked"));
-        select(b);
-        dirty = true;
-        audio.unlock();
-      }),
-  );
+  document.querySelectorAll<HTMLElement>("[data-spec]").forEach((el) => {
+    el.onclick = () => {
+      if (libraryDragging) return;
+      placeLibraryPart(
+        el.dataset.spec!,
+        currentColor,
+        new T.Vector3(controls.target.x, 0, controls.target.z),
+      );
+    };
+    el.ondragstart = (event) => {
+      if (!event.dataTransfer) return;
+      event.dataTransfer.effectAllowed = "copy";
+      const payload = JSON.stringify({
+        spec: el.dataset.spec,
+        color: currentColor,
+      });
+      event.dataTransfer.setData("application/x-brickids-part", payload);
+      event.dataTransfer.setData("text/plain", payload);
+      libraryDragging = true;
+      el.classList.add("dragging");
+    };
+    el.ondragend = () => {
+      el.classList.remove("dragging");
+      window.setTimeout(() => (libraryDragging = false), 0);
+    };
+  });
 }
 $("#more-parts").onclick = () => {
   morePartsOpen = !morePartsOpen;
@@ -601,6 +611,58 @@ function cast(e: { clientX: number; clientY: number }) {
   );
   ray.setFromCamera(mouse, camera);
 }
+function workspacePoint(e: { clientX: number; clientY: number }) {
+  cast(e);
+  return (
+    ray.ray.intersectPlane(
+      new T.Plane(new T.Vector3(0, 1, 0), 0),
+      new T.Vector3(),
+    ) ?? new T.Vector3(controls.target.x, 0, controls.target.z)
+  );
+}
+function placeLibraryPart(specId: string, color: string, target: T.Vector3) {
+  if (world.bricks.length >= 250) {
+    toast(text("limit"));
+    return null;
+  }
+  cancelPress();
+  const spec = catalog.find((candidate) => candidate.id === specId);
+  if (!spec) return null;
+  const brick = world.placeNew(spec, color, target);
+  if (!brick) {
+    toast(text("spawnBlocked"));
+    return null;
+  }
+  select(brick);
+  dirty = true;
+  audio.unlock();
+  return brick;
+}
+canvas.addEventListener("dragover", (event) => {
+  const types = Array.from(event.dataTransfer?.types ?? []);
+  if (
+    !types.includes("application/x-brickids-part") &&
+    !types.includes("text/plain")
+  )
+    return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+});
+canvas.addEventListener("drop", (event) => {
+  const raw =
+    event.dataTransfer?.getData("application/x-brickids-part") ||
+    event.dataTransfer?.getData("text/plain");
+  if (!raw) return;
+  event.preventDefault();
+  event.stopPropagation();
+  try {
+    const payload = JSON.parse(raw) as { spec?: string; color?: string };
+    if (!payload.spec || !payload.color) return;
+    placeLibraryPart(payload.spec, payload.color, workspacePoint(event));
+  } catch {
+    toast(text("spawnBlocked"));
+  }
+});
 let seamPointer: { pointerId: number; x: number; y: number; link: Connection } | null = null;
 let seamClick: Connection | null = null;
 function pickSeam() {
@@ -662,7 +724,11 @@ function beginDrag(e: TouchPoint): boolean {
   cast(e);
   seamClick = null;
   const hit = ray.intersectObjects(world.bricks.map((b) => b.mesh), true)[0];
-  if (!hit) return false;
+  if (!hit) {
+    if (selected && world.held.has(selected.id)) world.drop(selected.id, true);
+    select(null);
+    return false;
+  }
   let obj: T.Object3D = hit.object;
   while (!obj.userData.brick && obj.parent) obj = obj.parent;
   const b = obj.userData.brick as Brick;
