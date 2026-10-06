@@ -1744,3 +1744,103 @@ dialog::backdrop {
     padding: 1px 2px 14px;
   }
 }
+
+
+/* Library is controlled by its own persistent titlebar, not the page header. */
+#library {
+  padding: 0;
+  overflow: hidden;
+  max-height: calc(100dvh - 106px);
+  transition:
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+#library.collapsed {
+  bottom: auto;
+  max-height: none;
+}
+.library-titlebar {
+  height: 42px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px;
+  border-bottom: 1px solid #dce7f1;
+  background: #f5f9fddd;
+  color: #3f678d;
+  cursor: pointer;
+  user-select: none;
+}
+.library-titlebar:hover,
+.library-titlebar:focus-visible {
+  background: #eaf3fd;
+  outline: none;
+}
+.library-title-icon,
+.library-title-chevron {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.library-title-line {
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #b9d4ef, #dbe8f5);
+}
+.library-title-chevron {
+  transition: transform 150ms ease;
+}
+#library:not(.collapsed) .library-title-chevron {
+  transform: rotate(180deg);
+}
+#library.collapsed .library-titlebar {
+  border-bottom-color: transparent;
+}
+.library-body {
+  max-height: calc(100dvh - 148px);
+  padding: 12px 14px 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.library-body[hidden] {
+  display: none;
+}
+
+/* Live library dragging uses the actual Three.js brick; no browser drag ghost. */
+.brick-card {
+  cursor: grab;
+  touch-action: manipulation;
+}
+.brick-card:active,
+.brick-card.dragging-live,
+.library-live-drag .brick-card {
+  cursor: grabbing;
+}
+.brick-card.dragging-live {
+  opacity: 0.38;
+  transform: scale(0.98);
+}
+.library-live-drag,
+.library-live-drag * {
+  cursor: grabbing !important;
+}
+
+@media (max-width: 720px) {
+  #library {
+    padding: 0;
+  }
+  .library-titlebar {
+    height: 40px;
+    padding: 0 10px;
+  }
+  .library-body {
+    max-height: calc(100dvh - 126px);
+    padding: 10px 12px 12px;
+  }
+}
