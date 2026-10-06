@@ -272,7 +272,18 @@ function translate() {
   dirty = true;
 }
 const previewPart = partPreviews();
-const corePartIds = ["1x2", "1x4", "2x2", "2x4", "round-1x1", "slope-2x2"] as const;
+const corePartIds = [
+  "1x2",
+  "1x4",
+  "2x2",
+  "2x4",
+  "plate-1x2",
+  "plate-1x4",
+  "plate-2x2",
+  "plate-2x4",
+  "round-1x1",
+  "slope-2x2",
+] as const;
 let morePartsOpen = false;
 let libraryDragging = false;
 function partCard(s: (typeof catalog)[number]) {
