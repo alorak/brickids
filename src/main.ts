@@ -919,6 +919,7 @@ function starter() {
   world.placeNew(catalog[2], color("Green"), new T.Vector3(-3, 0, 0));
   world.placeNew(catalog[1], color("Blue"), new T.Vector3(2, 0, 2));
   world.placeNew(catalog[0], color("Dark Turquoise"), new T.Vector3(1, 0, -2));
+  world.placeNew(catalog[0], color("Yellow"), new T.Vector3(-4, 0, 3));
 }
 
 let previous = performance.now(),
