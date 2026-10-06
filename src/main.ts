@@ -178,17 +178,26 @@ function beginTurn(to: T.Quaternion, label: string) {
   dirty = true;
 }
 const seamLines = new Map<Connection, T.LineSegments>();
-const seamMaterial = new T.LineBasicMaterial({ color: 0xd49b36 });
+const seamDark = new T.Color(0x17324a);
+const seamLight = new T.Color(0xf7fbff);
+function seamColor(link: Connection) {
+  const color = new T.Color(world.get(link.a).color);
+  const luminance = color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;
+  return color.lerp(luminance > 0.52 ? seamDark : seamLight, 0.48);
+}
 function updateSeams() {
   const members =
     selected && !turning && !pressing
       ? component(selected.id, world.links)
       : new Set<number>();
-  const active = new Set(world.links.filter((l) => members.has(l.a)));
+  // Keep every real LEGO-to-LEGO contact slightly legible. The selected
+  // assembly gets a stronger version of the same part-aware seam.
+  const active = new Set(world.links);
   for (const [link, line] of seamLines)
     if (!active.has(link)) {
       scene.remove(line);
       line.geometry.dispose();
+      (line.material as T.Material).dispose();
       seamLines.delete(link);
     }
   for (const link of active) {
@@ -199,12 +208,24 @@ function updateSeams() {
           "position",
           new T.Float32BufferAttribute(new Float32Array(12), 3),
         ),
-        seamMaterial,
+        new T.LineBasicMaterial({
+          color: seamColor(link),
+          transparent: true,
+          opacity: 0.28,
+          depthTest: true,
+          depthWrite: false,
+        }),
       );
       line.userData.link = link;
       seamLines.set(link, line);
       scene.add(line);
     }
+    const focused = members.has(link.a);
+    const material = line.material as T.LineBasicMaterial;
+    material.color.copy(seamColor(link));
+    material.opacity = focused ? 0.82 : 0.28;
+    line.userData.interactive = focused;
+    line.renderOrder = focused ? 3 : 2;
     const points = seamSegments(world.get(link.a), world.get(link.b));
     line.visible = points.length > 0;
     if (points.length) {
@@ -315,7 +336,7 @@ function renderCards() {
       );
     };
     el.onpointerdown = (event) => {
-      if (event.button !== 0 || event.pointerType === "touch") return;
+      if (event.button !== 0) return;
       beginLibraryPointerDrag(el, event);
     };
   });
@@ -329,7 +350,6 @@ function select(b: Brick | null) {
   cancelPress();
   if (selected?.id !== b?.id) mobile?.selected();
   selected = b;
-  if (b && mobile?.enabled) setLibraryOpen(false);
   dirty = true;
 }
 function renderSelection() {
@@ -772,6 +792,7 @@ function placeLibraryPart(specId: string, color: string, target: T.Vector3) {
 }
 type LibraryPointerDrag = {
   pointerId: number;
+  pointerType: string;
   startX: number;
   startY: number;
   specId: string;
@@ -788,6 +809,7 @@ function beginLibraryPointerDrag(
 ) {
   libraryPointerDrag = {
     pointerId: event.pointerId,
+    pointerType: event.pointerType,
     startX: event.clientX,
     startY: event.clientY,
     specId: source.dataset.spec!,
@@ -826,12 +848,17 @@ window.addEventListener(
     const state = libraryPointerDrag;
     if (!state || event.pointerId !== state.pointerId) return;
     if (!state.started) {
+      const dx = event.clientX - state.startX;
+      const dy = event.clientY - state.startY;
+      // On phones, horizontal movement belongs to the compact library strip.
+      // An upward/vertical pull leaves the strip and becomes a workspace drag.
       if (
-        Math.hypot(
-          event.clientX - state.startX,
-          event.clientY - state.startY,
-        ) < 6
+        state.pointerType === "touch" &&
+        Math.abs(dx) > Math.abs(dy) &&
+        pointerInsideLibrary(event)
       )
+        return;
+      if (Math.hypot(dx, dy) < (state.pointerType === "touch" ? 10 : 6))
         return;
       state.started = true;
       libraryDragging = true;
@@ -919,7 +946,7 @@ function pickSeam() {
     Math.max(0.04, camera.position.distanceTo(controls.target) * 0.004),
   );
   const hits = ray.intersectObjects(
-    [...seamLines.values()].filter((l) => l.visible),
+    [...seamLines.values()].filter((l) => l.visible && l.userData.interactive),
     false,
   );
   const front = ray.intersectObjects(
@@ -928,6 +955,21 @@ function pickSeam() {
   )[0]?.distance;
   const hit = hits.find((h) => visibleSeamHit(h.distance, front));
   return hit?.object.userData.link as Connection | undefined;
+}
+function separateBrickAtPoint(e: { clientX: number; clientY: number }) {
+  cast(e);
+  const hit = ray.intersectObjects(world.bricks.map((b) => b.mesh), true)[0];
+  if (!hit) return false;
+  let obj: T.Object3D = hit.object;
+  while (!obj.userData.brick && obj.parent) obj = obj.parent;
+  const brick = obj.userData.brick as Brick | undefined;
+  if (!brick) return false;
+  select(brick);
+  const below = world.lowerConnection(brick.id);
+  if (!below) return false;
+  audio.unlock();
+  separate(below);
+  return true;
 }
 canvas.addEventListener("dblclick", (e) => {
   if (e.button !== 0 || turning || pressing) return;
@@ -943,27 +985,9 @@ canvas.addEventListener("dblclick", (e) => {
     return;
   }
 
-  // Otherwise a double-click on a brick means "separate this brick from the
-  // brick directly below it". Connections above the selected brick survive.
-  const hit = ray.intersectObjects(world.bricks.map((b) => b.mesh), true)[0];
-  if (!hit) {
-    seamClick = null;
-    return;
-  }
-  let obj: T.Object3D = hit.object;
-  while (!obj.userData.brick && obj.parent) obj = obj.parent;
-  const brick = obj.userData.brick as Brick | undefined;
-  if (!brick) {
-    seamClick = null;
-    return;
-  }
-  select(brick);
-  const below = world.lowerConnection(brick.id);
-  if (below) {
-    e.preventDefault();
-    audio.unlock();
-    separate(below);
-  }
+  // Otherwise a double-click on a brick separates it from the brick directly
+  // below it. The same action is used by touch double-tap.
+  if (separateBrickAtPoint(e)) e.preventDefault();
   seamClick = null;
 });
 function beginDrag(e: TouchPoint): boolean {
@@ -1015,6 +1039,7 @@ mobile = setupMobile({
     start: (point) => { audio.unlock(); return beginDrag(point); },
     move: (point) => { moveDrag(point); if (drag?.moving) mobile?.collapse(); },
     end: endDrag,
+    doubleTap: (point) => { separateBrickAtPoint(point); },
   },
   cancel: cancelInteraction,
   rotate,
