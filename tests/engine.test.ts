@@ -638,3 +638,29 @@ test("physics step auto-recovers a sleeping loose brick that is not upright", as
 
   w.world.free();
 });
+
+
+test("physics can be paused without moving bricks and resumes from rest", async () => {
+  const w = new BrickWorld(new Scene(), () => {});
+  await w.init();
+
+  const brick = w.add(catalog[1], "#0055BF", new Vector3(0, 4, 0));
+  brick.body.setLinvel({ x: 2, y: -3, z: 1 }, true);
+  brick.body.setAngvel({ x: 1, y: 2, z: 3 }, true);
+
+  w.setPhysicsEnabled(false);
+  assert.equal(w.physicsEnabled, false);
+  assert.deepEqual(brick.body.linvel(), { x: 0, y: 0, z: 0 });
+  assert.deepEqual(brick.body.angvel(), { x: 0, y: 0, z: 0 });
+
+  const pausedY = brick.position.y;
+  for (let i = 0; i < 120; i++) w.step();
+  assert.ok(Math.abs(brick.position.y - pausedY) < 1e-6);
+
+  w.setPhysicsEnabled(true);
+  assert.equal(w.physicsEnabled, true);
+  for (let i = 0; i < 20; i++) w.step();
+  assert.ok(brick.position.y < pausedY);
+
+  w.world.free();
+});
