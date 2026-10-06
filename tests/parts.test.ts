@@ -31,6 +31,10 @@ test("primary palette matches the requested BrickLink / LEGO mapping", () => {
     "1x4",
     "2x2",
     "2x4",
+    "plate-1x2",
+    "plate-1x4",
+    "plate-2x2",
+    "plate-2x4",
     "round-1x1",
     "slope-2x2",
   ])
@@ -51,8 +55,8 @@ test("complete BrickLink picker contains 214 unique catalog colors", () => {
 });
 
 test("catalog parts have working bottom sockets, exact engagement and scene round trips", async () => {
-  assert.equal(catalog.length, 14);
-  assert.equal(new Set(catalog.map((s) => s.id)).size, 14);
+  assert.equal(catalog.length, 16);
+  assert.equal(new Set(catalog.map((s) => s.id)).size, 16);
   for (const s of catalog.slice(3)) {
     const w = new BrickWorld(new Scene(), () => {});
     await w.init();
