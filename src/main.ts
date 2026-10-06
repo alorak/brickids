@@ -800,6 +800,7 @@ type LibraryPointerDrag = {
   source: HTMLElement;
   brickId: number | null;
   started: boolean;
+  browsing: boolean;
 };
 let libraryPointerDrag: LibraryPointerDrag | null = null;
 
@@ -817,6 +818,7 @@ function beginLibraryPointerDrag(
     source,
     brickId: null,
     started: false,
+    browsing: false,
   };
 }
 function pointerInsideLibrary(event: { clientX: number; clientY: number }) {
@@ -856,8 +858,13 @@ window.addEventListener(
         state.pointerType === "touch" &&
         Math.abs(dx) > Math.abs(dy) &&
         pointerInsideLibrary(event)
-      )
+      ) {
+        if (Math.hypot(dx, dy) >= 10) {
+          state.browsing = true;
+          libraryDragging = true;
+        }
         return;
+      }
       if (Math.hypot(dx, dy) < (state.pointerType === "touch" ? 10 : 6))
         return;
       state.started = true;
@@ -910,7 +917,9 @@ window.addEventListener(
     const state = libraryPointerDrag;
     if (!state || event.pointerId !== state.pointerId) return;
     if (!state.started) {
+      const browsing = state.browsing;
       libraryPointerDrag = null;
+      if (browsing) window.setTimeout(() => (libraryDragging = false), 0);
       return;
     }
     event.preventDefault();
