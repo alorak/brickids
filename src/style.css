@@ -983,12 +983,15 @@ dialog p {
   grid-column: 2;
   grid-row: 3;
   justify-self: center;
-  color: #a64c3d;
-  background: #fff8f4;
-  border-color: #ead7d0;
+  color: #b5362d;
+  background: linear-gradient(180deg, #ffe6e1 0%, #ffd5ce 100%);
+  border-color: #efb2aa;
 }
 .delete-icon:hover {
-  background: #faeee8 !important;
+  background: linear-gradient(180deg, #ffd9d2 0%, #ffc9c0 100%) !important;
+}
+.delete-icon:active {
+  background: #ffbeb4 !important;
 }
 .selection-bridge {
   display: none !important;
@@ -1381,9 +1384,9 @@ dialog {
   background: #f2f5f8;
 }
 .delete-icon {
-  color: #a64c3d;
-  background: #fff8f4;
-  border-color: #ead7d0;
+  color: #b5362d;
+  background: linear-gradient(180deg, #ffe6e1 0%, #ffd5ce 100%);
+  border-color: #efb2aa;
 }
 
 #alignment {
@@ -1438,7 +1441,7 @@ dialog::backdrop {
   text-align: center;
 }
 .delete-prompt {
-  color: #2a4058;
+  color: #c23832;
   font:
     750 18px "Manrope",
     sans-serif;
