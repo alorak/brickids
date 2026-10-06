@@ -24,7 +24,7 @@ let mobile: ReturnType<typeof setupMobile> | undefined;
 let language: Language =
   localStorage.getItem("bricks-language") === "tr" ? "tr" : "en";
 const app = document.querySelector<HTMLDivElement>("#app")!;
-app.innerHTML = `<canvas id="world" aria-label="3D brick workspace"></canvas><header><a class="brand" href="./"><span class="brand-icon">▦</span>bricks<span class="brand-dot">.</span></a><div class="top-actions"><button id="help" class="icon-button">?</button><button id="sound" class="icon-button" aria-pressed="true"></button><div class="language"><button data-lang="en">EN</button><button data-lang="tr">TR</button></div><button id="library-toggle" class="library-toggle" aria-controls="library"><span>▦</span><span data-t="library"></span><span id="toggle-arrow">↗</span></button></div></header><aside id="library"><h2 data-t="library"></h2><label class="ground-control"><span class="eyebrow" data-t="ground"></span><select id="ground"></select></label><div class="color-heading eyebrow" data-t="color"></div><div id="swatches"></div><select id="part-filter" aria-label="Parts"></select><div id="cards"></div></aside><section id="selection" class="selection" hidden><div class="eyebrow" data-t="selected"></div><div id="selection-content"></div></section><div class="bottom-center"><div id="alignment" role="status"></div></div><footer><div class="status"><button id="pause"><i></i><span data-t="live"></span></button><span class="footer-divider"></span><span id="counts"></span></div><div class="scene-actions"><button id="view">⌖</button><button id="save" data-t="save"></button><button id="load" data-t="load"></button><button id="reset" data-t="reset"></button></div></footer><div id="toast" role="status"></div><dialog id="help-dialog"><button id="close-help" class="close">×</button><div class="eyebrow" data-t="shortcuts"></div><h2 data-t="help"></h2><button id="demo" class="text-button" data-t="demo"></button><p data-t="helpText"></p><div class="key-row"><kbd>Q</kbd><kbd>E</kbd><span data-t="lift"></span></div><div class="key-row"><kbd>R</kbd><span data-t="axisY"></span></div><div class="key-row"><kbd>X</kbd><kbd>Z</kbd><span data-t="tiltAxes"></span></div><div class="key-row"><kbd data-t="doubleClick"></kbd><span data-t="seamHelp"></span></div><div class="key-row"><kbd>Delete</kbd><kbd>Backspace</kbd><span data-t="delete"></span></div><div class="key-row"><kbd>Space</kbd><span data-t="press"></span></div></dialog><input type="file" id="file" accept=".json" hidden><div id="loading" data-t="loading"></div>`;
+app.innerHTML = `<canvas id="world" aria-label="3D brick workspace"></canvas><header><a class="brand" href="./" aria-label="brickids"><span class="brand-main">brick</span><span class="brand-accent">ids</span></a><div class="top-actions"><button id="help" class="icon-button">?</button><button id="sound" class="icon-button" aria-pressed="true"></button><div class="language"><button data-lang="en">EN</button><button data-lang="tr">TR</button></div><button id="library-toggle" class="library-toggle" aria-controls="library"><span>▦</span><span data-t="library"></span><span id="toggle-arrow">↗</span></button></div></header><aside id="library"><h2 data-t="library"></h2><label class="ground-control"><span class="eyebrow" data-t="ground"></span><select id="ground"></select></label><div class="color-heading eyebrow" data-t="color"></div><div id="swatches"></div><select id="part-filter" aria-label="Parts"></select><div id="cards"></div></aside><section id="selection" class="selection" hidden><div id="selection-content"></div></section><div class="bottom-center"><div id="alignment" role="status"></div></div><footer><div class="status"><button id="pause"><i></i><span data-t="live"></span></button><span class="footer-divider"></span><span id="counts"></span></div><div class="scene-actions"><button id="view">⌖</button><button id="save" data-t="save"></button><button id="load" data-t="load"></button><button id="reset" data-t="reset"></button></div></footer><div id="toast" role="status"></div><dialog id="help-dialog"><button id="close-help" class="close">×</button><div class="eyebrow" data-t="shortcuts"></div><h2 data-t="help"></h2><button id="demo" class="text-button" data-t="demo"></button><p data-t="helpText"></p><div class="key-row"><kbd>Q</kbd><kbd>E</kbd><span data-t="lift"></span></div><div class="key-row"><kbd>R</kbd><span data-t="axisY"></span></div><div class="key-row"><kbd>X</kbd><kbd>Z</kbd><span data-t="tiltAxes"></span></div><div class="key-row"><kbd data-t="doubleClick"></kbd><span data-t="seamHelp"></span></div><div class="key-row"><kbd>Delete</kbd><kbd>Backspace</kbd><span data-t="delete"></span></div><div class="key-row"><kbd>Space</kbd><span data-t="press"></span></div></dialog><input type="file" id="file" accept=".json" hidden><div id="loading" data-t="loading"></div>`;
 const $ = <E extends HTMLElement = HTMLElement>(s: string) =>
   document.querySelector<E>(s)!;
 const text = (key: keyof typeof messages.en) => messages[language][key];
@@ -335,8 +335,47 @@ function renderSelection() {
   const held = world.held.has(b.id),
     lowerLink = world.lowerConnection(b.id),
     links = world.links.filter((l) => component(b.id, world.links).has(l.a));
-  $("#selection-content").innerHTML =
-    `<div class="selected-quick"><div class="selected-part-thumb"><img src="${previewPart(b.spec, b.color)}" alt="" draggable="false"></div><div class="selected-part-info"><h3>${partLabel(b.spec, language)}</h3><span class="pill">${held ? text("held") : text("free")}</span></div><button id="quick-detach" class="quick-detach" ${lowerLink ? "" : "disabled"}>↗ ${text("detach")}</button></div><div class="selection-actions"><button id="grab" class="secondary">${held ? text("drop") : text("grab")} <span>${held ? "Esc" : "↖"}</span></button><button id="rotate" title="R">↻ <span>${text("rotate")}</span></button><button id="upright" title="U">${text("upright")}</button><button id="remove" class="remove" title="${text("delete")} (Delete)" aria-label="${text("delete")}">${text("delete")}</button></div><div class="height-actions"><span>${text("lift")}</span><button id="down">−</button><button id="up">+</button><kbd>Q / E</kbd></div><button id="press" class="press" ${held ? "" : "disabled"}><span>${text("press")}</span><kbd>Space</kbd></button>${links.length ? `<div class="seam-label eyebrow">${text("seam")}</div><select id="seams" aria-label="${text("seam")}">${links.map((l) => `<option value="${world.links.indexOf(l)}">#${l.a} ↔ #${l.b} · ${l.studs} ${text("studs")}</option>`).join("")}</select><button id="detach" class="detach">↗ ${text("detach")}</button>` : ""}`;
+
+  // Keep the visible surface intentionally icon-first. The hidden bridge
+  // preserves the existing mobile HUD actions without reintroducing text here.
+  $("#selection-content").innerHTML = `
+    <div class="selection-minimal">
+      <div class="selected-part-thumb selected-part-thumb-large">
+        <img src="${previewPart(b.spec, b.color)}" alt="" draggable="false">
+      </div>
+      <button id="quick-detach" class="selection-icon-button separate-icon" ${lowerLink ? "" : "disabled"}
+        aria-label="${text("detach")}" title="${text("detach")}">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <rect x="7" y="14" width="12" height="12" rx="2"></rect>
+          <rect x="29" y="22" width="12" height="12" rx="2"></rect>
+          <path d="M20 18h8M24 14l4 4-4 4M28 30h-8M24 26l-4 4 4 4"></path>
+        </svg>
+      </button>
+      <button id="quick-delete" class="selection-icon-button delete-icon"
+        aria-label="${text("delete")}" title="${text("delete")}">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <path d="M15 17h18l-1.5 22h-15z"></path>
+          <path d="M12 17h24M20 12h8l2 5H18zM21 22v11M27 22v11"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="selection-bridge" hidden>
+      <div class="selected-title">
+        <span class="color-chip" style="background:${b.color}"></span>
+        <h3>${partLabel(b.spec, language)}</h3>
+      </div>
+      <button id="grab">${held ? text("drop") : text("grab")}</button>
+      <button id="rotate">${text("rotate")}</button>
+      <button id="upright">${text("upright")}</button>
+      <button id="remove">${text("delete")}</button>
+      <button id="down">−</button><button id="up">+</button>
+      <button id="press" ${held ? "" : "disabled"}>${text("press")}</button>
+      ${links.length ? `<select id="seams">${links.map((l) => `<option value="${world.links.indexOf(l)}">#${l.a} ↔ #${l.b}</option>`).join("")}</select><button id="detach">${text("detach")}</button>` : ""}
+    </div>`;
+
+  if (lowerLink) $("#quick-detach").onclick = () => separate(lowerLink);
+  $("#quick-delete").onclick = deleteSelected;
+
   $("#grab").onclick = () => {
     cancelTurn();
     cancelPress();
@@ -348,9 +387,7 @@ function renderSelection() {
   $("#remove").onclick = deleteSelected;
   $("#up").onclick = () => height(0.24);
   $("#down").onclick = () => height(-0.24);
-  if (lowerLink) $("#quick-detach").onclick = () => separate(lowerLink);
-  const press = $("#press");
-  press.onclick = () => startPress();
+  $("#press").onclick = () => startPress();
   if (links.length)
     $("#detach").onclick = () =>
       separate(world.links[Number($<HTMLSelectElement>("#seams").value)]);
@@ -369,7 +406,7 @@ function separate(link: Connection) {
   updateSeams();
 }
 function deleteSelected() {
-  if (!selected) return;
+  if (!selected || !confirm(text("deleteConfirm"))) return;
   cancelPress();
   endDrag();
   const id = selected.id;
