@@ -184,3 +184,32 @@ html.touch-layout #selection.selection {
 @media (prefers-reduced-motion: reduce) {
   #library, .brick-card, #toast { transition: none; }
 }
+
+
+/* Footerless layout: controls now anchor directly above the safe-area edge. */
+.touch-layout {
+  --footer-height: var(--safe-bottom);
+  --hud-bottom: calc(var(--safe-bottom) + 12px);
+}
+.touch-layout .header-tool {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.touch-layout #library {
+  bottom: calc(var(--safe-bottom) + 12px);
+}
+.touch-layout footer {
+  display: none !important;
+}
+@media (max-width: 760px) {
+  .touch-layout #library {
+    bottom: calc(var(--safe-bottom) + 8px);
+    max-height: calc(100dvh - var(--safe-top) - 156px);
+  }
+}
+@media (max-height: 500px) and (min-width: 540px) {
+  .touch-layout #library {
+    bottom: calc(var(--safe-bottom) + 6px);
+  }
+}
