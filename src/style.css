@@ -348,6 +348,59 @@ h2 {
     sans-serif;
   margin: 13px 0 8px;
 }
+.selected-quick {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 14px;
+}
+.selected-part-thumb {
+  width: 58px;
+  height: 58px;
+  border: 1px solid #dfe2d7;
+  border-radius: 9px;
+  background: #ffffffc7;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+.selected-part-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scale(1.08);
+}
+.selected-part-info {
+  min-width: 0;
+}
+.selected-part-info h3 {
+  margin: 0 0 5px;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.selected-part-info .pill {
+  display: inline-flex;
+}
+.quick-detach {
+  align-self: stretch;
+  min-width: 58px;
+  border: 1px solid #d7ddd0;
+  border-radius: 7px;
+  background: #eef1e8;
+  padding: 8px 9px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.quick-detach:not(:disabled):hover {
+  background: #e3e9dc;
+}
+.quick-detach:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
 .selected-title {
   display: flex;
   align-items: center;
