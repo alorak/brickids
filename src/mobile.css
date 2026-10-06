@@ -331,6 +331,17 @@ html.touch-layout #selection.selection {
 }
 
 
+/* Tablet touch layout no longer needs to reserve vertical space for the removed
+   Build/Camera/Zoom toolbar. Keep the library just below the header actions. */
+@media (min-width: 761px) {
+  .touch-layout #library {
+    top: calc(72px + var(--safe-top));
+  }
+  .touch-layout .library-body {
+    max-height: calc(100dvh - var(--safe-top) - 126px);
+  }
+}
+
 /* Final phone layout: no build/camera/zoom toolbar, a compact two-row library,
    and small selected-brick actions that remain available beside the workspace. */
 @media (max-width: 760px) {
