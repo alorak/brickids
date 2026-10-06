@@ -647,6 +647,17 @@ export class BrickWorld {
     this.release();
     return true;
   }
+  /** Release a held assembly. If it is already close to a valid LEGO mating
+   * pose, finish the alignment and connect it before handing it back to physics.
+   * Returns true when an automatic connection was made.
+   */
+  drop(id: number) {
+    if (!this.held.has(id)) return false;
+    if (this.press(id)) return true;
+    this.release();
+    return false;
+  }
+
   detach(link: Connection, _from: number) {
     // Pull one side of a physical interface. Parallel connections across that
     // interface must release together; connections inside either side survive.
