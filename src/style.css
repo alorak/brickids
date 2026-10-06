@@ -1501,3 +1501,190 @@ dialog::backdrop {
     width: min(290px, calc(100vw - 28px));
   }
 }
+
+
+/* Object-style library drag preview and complete BrickLink color picker. */
+.brick-drag-image {
+  position: fixed;
+  left: -2000px;
+  top: -2000px;
+  width: 150px;
+  height: 96px;
+  padding: 0;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.other-swatch {
+  position: relative;
+  overflow: hidden;
+}
+.other-corner {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-bottom: 12px solid var(--ui-blue);
+  filter: drop-shadow(0 0 1px #fff);
+  pointer-events: none;
+}
+
+/* Scene menu: four compact actions in one row. */
+.scene-dialog {
+  width: min(700px, calc(100vw - 30px));
+  padding: 30px 32px 24px;
+}
+.scene-menu-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 30px;
+}
+.scene-menu-action {
+  min-height: 142px;
+  padding: 16px 8px;
+}
+.scene-menu-action svg {
+  width: 52px;
+  height: 52px;
+  stroke-width: 1.65;
+}
+.scene-language {
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+.close {
+  right: 14px;
+  top: 12px;
+  width: 54px;
+  height: 54px;
+  min-width: 54px;
+  border: 1px solid #c9dced;
+  border-radius: 50%;
+  background: #f3f8fe;
+  font-size: 39px;
+  line-height: 1;
+}
+.close:hover {
+  background: #e3f0fc;
+}
+
+/* Complete 214-color browser. */
+.color-dialog {
+  width: min(780px, calc(100vw - 30px));
+  max-height: min(84dvh, 790px);
+  padding: 76px 24px 24px;
+  overflow: hidden;
+}
+.color-picker-top {
+  margin-bottom: 14px;
+}
+#color-search {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid #c8dced;
+  border-radius: 12px;
+  background: #f7fbff;
+  color: #294b6b;
+  font: 500 14px "DM Sans", sans-serif;
+  outline: none;
+}
+#color-search:focus {
+  border-color: #78a9d8;
+  box-shadow: 0 0 0 3px #dcecff;
+}
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  max-height: min(65dvh, 610px);
+  padding: 2px 5px 2px 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.color-option {
+  min-width: 0;
+  min-height: 58px;
+  padding: 7px 9px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #d8e4ef;
+  border-radius: 11px;
+  background: #f9fbfd;
+  text-align: left;
+}
+.color-option:hover,
+.color-option:focus-visible {
+  background: #eef6ff;
+  border-color: #9dbfe0;
+  transform: translateY(-1px);
+}
+.color-option-swatch {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #0002;
+  border-radius: 9px;
+  box-shadow:
+    inset 0 0 0 1px #fff6,
+    0 1px 3px #163c6812;
+}
+.color-option-name {
+  min-width: 0;
+  color: #355776;
+  font-size: 11px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 720px) {
+  .scene-dialog {
+    width: min(520px, calc(100vw - 20px));
+    padding: 24px 14px 18px;
+  }
+  .scene-menu-grid {
+    gap: 7px;
+    margin-top: 34px;
+  }
+  .scene-menu-action {
+    min-height: 96px;
+    padding: 10px 3px;
+    font-size: 10px;
+  }
+  .scene-menu-action svg {
+    width: 38px;
+    height: 38px;
+  }
+  .scene-language {
+    margin-top: 12px;
+  }
+  .close {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    font-size: 35px;
+  }
+  .color-dialog {
+    width: min(520px, calc(100vw - 18px));
+    padding: 68px 14px 14px;
+  }
+  .color-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: 68dvh;
+  }
+  .color-option {
+    grid-template-columns: 38px minmax(0, 1fr);
+    min-height: 52px;
+    padding: 6px 7px;
+  }
+  .color-option-swatch {
+    width: 38px;
+    height: 38px;
+  }
+}
