@@ -342,11 +342,61 @@ html.touch-layout #selection.selection {
   }
 }
 
-/* Final phone layout: no build/camera/zoom toolbar, a compact two-row library,
-   and small selected-brick actions that remain available beside the workspace. */
+/* The legacy touch HUD is no longer part of the mobile UI. Direct gestures
+   handle movement/camera and the selected-brick box owns the quick actions. */
+.touch-layout #touch-hud {
+  display: none !important;
+}
+
+/* Touch devices use only the compact Separate / Rotate / Delete box. */
+html.touch-layout #selection.selection {
+  display: block;
+}
+.touch-layout #selection-content {
+  display: block;
+  position: fixed;
+  top: calc(62px + var(--safe-top));
+  left: var(--edge-left);
+  width: auto;
+  pointer-events: auto;
+  z-index: 6;
+}
+.touch-layout #selection-content .selection-minimal {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid #c9d9e8cc;
+  border-radius: 10px;
+  background: #f7fbffdd;
+  box-shadow: 0 3px 12px #15334d18;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+.touch-layout #selection-content .selected-part-thumb-large {
+  display: none;
+}
+.touch-layout #selection-content .selection-icon-button {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 6px;
+  border-radius: 8px;
+}
+.touch-layout #selection-content .selection-icon-button svg {
+  width: 22px;
+  height: 22px;
+}
+.touch-layout #selection-content .selection-bridge {
+  display: none !important;
+}
+
+/* Final phone layout: colors stay fixed at the left, while parts remain a
+   horizontally scrollable two-row strip to their right. */
 @media (max-width: 760px) {
   .touch-layout {
-    --mobile-library-height: 166px;
+    --mobile-library-height: 142px;
     --hud-bottom: calc(var(--safe-bottom) + var(--mobile-library-height) + 14px);
   }
 
@@ -384,21 +434,27 @@ html.touch-layout #selection.selection {
     height: 18px;
   }
   .touch-layout .library-body {
-    padding: 5px 7px 7px;
-    max-height: 134px;
+    display: grid;
+    grid-template-columns: 47px minmax(0, 1fr);
+    align-items: start;
+    gap: 7px;
+    padding: 6px 7px 7px;
+    max-height: 110px;
     overflow: hidden;
   }
   .touch-layout #swatches {
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
+    display: grid;
+    grid-template-rows: repeat(4, 22px);
+    grid-auto-flow: column;
+    grid-auto-columns: 22px;
+    align-content: start;
+    justify-content: start;
     gap: 3px;
-    margin: 0 0 4px;
-    padding: 0 0 2px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-    touch-action: pan-x;
+    width: 47px;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    touch-action: manipulation;
   }
   .touch-layout #swatches::-webkit-scrollbar {
     display: none;
@@ -409,13 +465,15 @@ html.touch-layout #selection.selection {
     min-width: 22px;
     min-height: 22px;
     border-width: 4px;
-    flex: 0 0 auto;
+    flex: none;
   }
   .touch-layout .library-parts-scroll {
     display: flex;
-    flex: 0 0 auto;
+    flex: 1 1 auto;
     align-items: stretch;
     gap: 4px;
+    width: 100%;
+    min-width: 0;
     min-height: 0;
     overflow-x: auto;
     overflow-y: hidden;
@@ -470,46 +528,4 @@ html.touch-layout #selection.selection {
     margin: 0;
   }
 
-  html.touch-layout #selection.selection {
-    display: block;
-  }
-  .touch-layout #selection-content {
-    display: block;
-    position: fixed;
-    top: calc(62px + var(--safe-top));
-    left: var(--edge-left);
-    width: auto;
-    pointer-events: auto;
-    z-index: 6;
-  }
-  .touch-layout #selection-content .selection-minimal {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    padding: 3px;
-    border: 1px solid #c9d9e8cc;
-    border-radius: 10px;
-    background: #f7fbffdd;
-    box-shadow: 0 3px 12px #15334d18;
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-  }
-  .touch-layout #selection-content .selected-part-thumb-large {
-    display: none;
-  }
-  .touch-layout #selection-content .selection-icon-button {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    min-height: 34px;
-    padding: 6px;
-    border-radius: 8px;
-  }
-  .touch-layout #selection-content .selection-icon-button svg {
-    width: 22px;
-    height: 22px;
-  }
-  .touch-layout #selection-content .selection-bridge {
-    display: none !important;
-  }
 }
