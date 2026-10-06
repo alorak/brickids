@@ -561,3 +561,58 @@ test("lower connection shortcut detaches the selected brick from below but keeps
 
   w.world.free();
 });
+
+
+test("placeNew settles immediately on the grid and stacks on an occupied column", async () => {
+  const w = new BrickWorld(new Scene(), () => {});
+  await w.init();
+
+  const lower = w.placeNew(
+    catalog[1],
+    "#1E5AA8",
+    new Vector3(0.24, 0, 0.31),
+  );
+  assert.ok(lower);
+  assert.equal(w.held.size, 0);
+  assert.ok(Math.abs(lower!.position.x) < 1e-5);
+  assert.ok(Math.abs(lower!.position.z) < 1e-5);
+  assert.ok(Math.abs(lower!.position.y - 0.6) < 0.05);
+
+  const upper = w.placeNew(
+    catalog[1],
+    "#B40000",
+    new Vector3(0.24, 0, 0.31),
+  );
+  assert.ok(upper);
+  assert.equal(w.held.size, 0);
+  assert.ok(upper!.position.y > 1.6);
+  assert.equal(w.links.length, 1, "occupied aligned column becomes a real snap");
+
+  w.world.free();
+});
+
+test("a sideways or upside-down loose brick recovers upright at the nearest clear grid cell", async () => {
+  const w = new BrickWorld(new Scene(), () => {});
+  await w.init();
+
+  w.add(catalog[1], "#1E5AA8", new Vector3(0, 0.6, 0));
+  const fallen = w.add(
+    catalog[1],
+    "#D67923",
+    new Vector3(0, 2.0, 0),
+    new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), Math.PI),
+  );
+  w.grab(fallen.id);
+
+  assert.ok(w.drop(fallen.id, true));
+  assert.equal(w.held.size, 0);
+  const up = new Vector3(0, 1, 0).applyQuaternion(fallen.rotation);
+  assert.ok(up.y > 0.999, "recovery makes the brick upright");
+  assert.ok(Math.abs(fallen.position.y - 0.6) < 0.05);
+  assert.ok(
+    Math.hypot(fallen.position.x, fallen.position.z) > 1.5,
+    "occupied target is skipped for a nearby clear grid cell",
+  );
+
+  w.world.free();
+});
