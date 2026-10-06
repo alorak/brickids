@@ -623,21 +623,15 @@ function moveDrag(e: TouchPoint) {
   cast(e);
   if (!drag.moving && Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > 4) {
     world.grab(drag.id);
-    const b = world.get(drag.id);
-    world.transform(b.id, b.position.clone().add(new T.Vector3(0, 0.4, 0)));
     drag.moving = true;
     dirty = true;
   }
   if (drag.moving) {
     const b = world.get(drag.id);
-    const target = dragTarget(ray.ray, drag.plane, drag.offset, b.position.y);
-    if (target) {
-      const dist = target.distanceTo(b.position),
-        steps = Math.max(1, Math.ceil(dist / 0.15)),
-        origin = b.position.clone();
-      for (let i = 1; i <= steps; i++)
-        if (!world.transform(b.id, origin.clone().lerp(target, i / steps))) break;
-    }
+    // The gesture plane supplies only X/Z. The engine resolves Y by casting the
+    // held assembly straight down onto the first surface below the pointer.
+    const target = dragTarget(ray.ray, drag.plane, drag.offset, 0);
+    if (target) world.snapDown(b.id, target);
   }
 }
 // Install capture handlers BEFORE the mouse handlers and keep touches out of OrbitControls.
@@ -679,8 +673,15 @@ canvas.addEventListener("pointermove", (e) => {
   moveDrag(e);
 });
 function endDrag() {
+  const moved = drag?.moving && world.held.has(drag.id);
   drag = null;
   controls.enabled = true;
+  // A completed pointer gesture is a placement, not a permanent kinematic hold.
+  // Releasing immediately hands the snapped piece back to gravity/contacts.
+  if (moved) {
+    world.release();
+    dirty = true;
+  }
 }
 canvas.addEventListener("pointerup", (e) => {
   if (seamPointer?.pointerId === e.pointerId) {
