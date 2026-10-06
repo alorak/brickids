@@ -536,7 +536,7 @@ export class BrickWorld {
     return true;
   }
 
-  candidate(id: number) {
+  candidate(id: number, assistTilt = Math.PI / 36) {
     if (!this.held.has(id)) return null;
     const root = this.get(id);
     type Fit = NonNullable<ReturnType<typeof mating>>;
@@ -556,7 +556,7 @@ export class BrickWorld {
         for (const fromBelow of [false, true]) {
           const upper = fromBelow ? stationary : moving;
           const lower = fromBelow ? moving : stationary;
-          const contact = mating(upper, lower, 0.65, true);
+          const contact = mating(upper, lower, 0.65, true, assistTilt);
           if (!contact) continue;
           // mating gives the upper target with the lower fixed. Invert that
           // rigid transform when holding the lower, keeping the upper in place.
@@ -622,8 +622,8 @@ export class BrickWorld {
     joint.setContactsEnabled(false);
     this.links.push({ a: a.id, b: b.id, joint, studs });
   }
-  press(id: number) {
-    const c = this.candidate(id);
+  press(id: number, assistTilt = Math.PI / 36) {
+    const c = this.candidate(id, assistTilt);
     if (!c) return false;
     if (!this.transform(id, c.fit.position, c.fit.rotation)) return false;
     // A wide brick may engage several independent supports with the same press.
@@ -653,7 +653,10 @@ export class BrickWorld {
    */
   drop(id: number) {
     if (!this.held.has(id)) return false;
-    if (this.press(id)) return true;
+    // Drop is intentionally a little more forgiving than the live preview:
+    // a piece that is already resting near compatible studs may straighten
+    // from up to 15° of pitch/roll, but distance and yaw limits stay unchanged.
+    if (this.press(id, Math.PI / 12)) return true;
     this.release();
     return false;
   }
