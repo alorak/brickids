@@ -1091,7 +1091,6 @@ function endDrag() {
     const connected = world.drop(movedId, true);
     if (connected) {
       audio.play(0.8, false, true);
-      toast(text("connected"));
     }
     dirty = true;
   }
@@ -1231,8 +1230,7 @@ function frame(now: number) {
           pressing = null;
           if (world.press(p.id)) {
             audio.play(0.8, false, true);
-            toast(text("connected"));
-            dirty = true;
+                  dirty = true;
           } else toast(text("notReady"));
         }
       }
