@@ -39,11 +39,12 @@ export function mating(
   lower: Pose,
   maxGap = 0.65,
   assist = false,
+  assistTilt = Math.PI / 36,
 ) {
   const inv = lower.rotation.clone().invert();
   const relative = inv.clone().multiply(upper.rotation);
   const up = new Vector3(0, 1, 0).applyQuaternion(relative);
-  if (up.y < (assist ? Math.cos(Math.PI / 36) : 0.999)) return null;
+  if (up.y < (assist ? Math.cos(assistTilt) : 0.999)) return null;
   const axis = new Vector3(1, 0, 0).applyQuaternion(relative);
   const freeYaw = [upper.spec, lower.spec].some(
     (s) => s.shape === "round" && s.cols === 1 && s.rows === 1,

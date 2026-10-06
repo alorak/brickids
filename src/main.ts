@@ -673,13 +673,18 @@ canvas.addEventListener("pointermove", (e) => {
   moveDrag(e);
 });
 function endDrag() {
-  const moved = drag?.moving && world.held.has(drag.id);
+  const movedId = drag?.moving && world.held.has(drag.id) ? drag.id : null;
   drag = null;
   controls.enabled = true;
-  // A completed pointer gesture is a placement, not a permanent kinematic hold.
-  // Releasing immediately hands the snapped piece back to gravity/contacts.
-  if (moved) {
-    world.release();
+  if (movedId !== null) {
+    // Drag motion already resolves Y onto the first surface below. On release,
+    // finish a nearby valid stud/socket alignment; otherwise just return the
+    // piece to normal gravity and contacts.
+    const connected = world.drop(movedId);
+    if (connected) {
+      audio.play(0.8, false, true);
+      toast(text("connected"));
+    }
     dirty = true;
   }
 }
