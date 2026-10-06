@@ -31,8 +31,12 @@ const renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: false });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = T.PCFSoftShadowMap;
-renderer.toneMapping = T.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.95;
+// Keep material hues close to the CSS/BrickLink swatches. ACES + warm,
+// high-intensity lighting was visibly washing saturated LEGO colours toward
+// pastel tones.
+renderer.outputColorSpace = T.SRGBColorSpace;
+renderer.toneMapping = T.NeutralToneMapping;
+renderer.toneMappingExposure = 0.9;
 const scene = new T.Scene();
 scene.background = new T.Color("#f3f0e9");
 scene.fog = new T.Fog("#f3f0e9", 35, 95);
@@ -52,11 +56,11 @@ controls.mouseButtons = {
 const pmrem = new T.PMREMGenerator(renderer),
   room = new RoomEnvironment();
 scene.environment = pmrem.fromScene(room, 0.04).texture;
-scene.environmentIntensity = 0.65;
+scene.environmentIntensity = 0.22;
 room.dispose();
 pmrem.dispose();
-scene.add(new T.HemisphereLight(0xffffff, 0xbeb7a8, 0.8));
-const sun = new T.DirectionalLight(0xfff4df, 2.5);
+scene.add(new T.HemisphereLight(0xffffff, 0xdfe3e0, 0.48));
+const sun = new T.DirectionalLight(0xffffff, 1.35);
 sun.position.set(-7, 18, 10);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -509,17 +513,35 @@ function setLibraryOpen(open: boolean) {
   $("#library-toggle").setAttribute("aria-expanded", String(open));
 }
 $("#library-toggle").onclick = () => setLibraryOpen(!panelOpen);
+function closeDialogFromBackdrop(dialog: HTMLDialogElement, event: MouseEvent) {
+  if (event.target !== dialog) return;
+  const box = dialog.getBoundingClientRect();
+  const inside =
+    event.clientX >= box.left &&
+    event.clientX <= box.right &&
+    event.clientY >= box.top &&
+    event.clientY <= box.bottom;
+  if (!inside) dialog.close();
+}
 $("#scene-menu-toggle").onclick = () => {
   setLibraryOpen(false);
   cancelInteraction();
   $<HTMLDialogElement>("#scene-dialog").showModal();
 };
-$("#close-scene-menu").onclick = () => $<HTMLDialogElement>("#scene-dialog").close();
+const sceneDialog = $<HTMLDialogElement>("#scene-dialog");
+sceneDialog.addEventListener("click", (event) =>
+  closeDialogFromBackdrop(sceneDialog, event),
+);
+$("#close-scene-menu").onclick = () => sceneDialog.close();
 $("#help").onclick = () => {
   cancelInteraction();
   $<HTMLDialogElement>("#help-dialog").showModal();
 };
-$("#close-help").onclick = () => $<HTMLDialogElement>("#help-dialog").close();
+const helpDialog = $<HTMLDialogElement>("#help-dialog");
+helpDialog.addEventListener("click", (event) =>
+  closeDialogFromBackdrop(helpDialog, event),
+);
+$("#close-help").onclick = () => helpDialog.close();
 function renderSoundButton() {
   const button = $("#sound");
   const label = text(audio.enabled ? "soundOn" : "soundOff");
@@ -890,137 +912,15 @@ window.addEventListener("resize", resize);
 resize();
 translate();
 function starter() {
-  world.add(
-    catalog[2],
-    colors[2],
-    new T.Vector3(-2, 0.62, 0),
-    new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), 0),
-  );
-  world.add(
-    catalog[1],
-    colors[0],
-    new T.Vector3(2, 0.62, 1.8),
-    new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), 0),
-  );
-  world.add(
-    catalog[0],
-    colors[1],
-    new T.Vector3(0.8, 0.62, -2.1),
-    new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), 0),
-  );
-  world.add(
-    catalog[0],
-    colors[3],
-    new T.Vector3(-3.8, 0.62, 3),
-    new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), 0),
-  );
+  // Starter parts use the same placement engine as the library so every
+  // initial brick is aligned to the visible stud grid and released normally.
+  const color = (name: (typeof colorPalette)[number]["name"]) =>
+    colorPalette.find((entry) => entry.name === name)!.hex;
+  world.placeNew(catalog[2], color("Green"), new T.Vector3(-3, 0, 0));
+  world.placeNew(catalog[1], color("Blue"), new T.Vector3(2, 0, 2));
+  world.placeNew(catalog[0], color("Dark Turquoise"), new T.Vector3(1, 0, -2));
 }
-let previous = performance.now(),
-  accumulator = 0;
-function frame(now: number) {
-  requestAnimationFrame(frame);
-  accumulator += Math.min((now - previous) / 1000, 0.05);
-  previous = now;
-  while (accumulator >= 1 / 120) {
-    world.step();
-    accumulator -= 1 / 120;
-  }
-  if (turning) {
-    const motion = turning,
-      b = world.get(motion.id),
-      progress = Math.min(1, (now - motion.start) / TURN_DURATION_MS);
-    if (!b || !world.held.has(motion.id)) {
-      cancelTurn();
-    } else if (
-      !world.transform(
-        motion.id,
-        motion.position,
-        rotationAt(motion.from, motion.to, progress),
-      )
-    ) {
-      cancelTurn();
-      toast(text("blocked"));
-    } else if (progress === 1) cancelTurn();
-  }
-  if (pressing) {
-    const p = pressing,
-      t = Math.min(1, (now - p.start) / 450),
-      b = world.get(p.id),
-      anchor = world.get(p.anchor);
-    if (!b || !anchor || !world.held.has(b.id)) {
-      cancelPress();
-    } else {
-      const progress = t * t * (3 - 2 * t);
-      const target = p.origin.clone().lerp(p.target, progress);
-      const rotation = p.fromRotation.clone().slerp(p.rotation, progress);
-      if (!world.transform(p.id, target, rotation)) {
-        cancelPress();
-        toast(text("blocked"));
-      } else {
-        $("#press")?.style.setProperty("--progress", `${t * 100}%`);
-        if (t === 1) {
-          pressing = null;
-          if (world.press(p.id)) {
-            audio.play(0.8, false, true);
-            toast(text("connected"));
-            dirty = true;
-          } else toast(text("notReady"));
-        }
-      }
-    }
-  }
-  if (selected && !world.bricks.includes(selected)) select(null);
-  if (dirty) {
-    renderSelection();
-    dirty = false;
-  }
-  updateSeams();
-  outline.visible = !!selected;
-  if (selected) {
-    outline.setFromObject(selected.mesh);
-    const candidate = turning ? null : world.candidate(selected.id);
-    (outline.material as T.LineBasicMaterial).color.set(
-      candidate ? 0x46866b : 0x8c9591,
-    );
-    $("#alignment").textContent = world.held.has(selected.id)
-      ? turning
-        ? turning.label
-        : pressing
-          ? text("pressing")
-          : candidate
-            ? mobile?.enabled ? mobile.text("ready") : text("ready")
-            : ""
-      : "";
-    $("#alignment").classList.toggle("ready", !!candidate);
-    $("#press")?.toggleAttribute("disabled", !candidate);
-    ghost.visible = !!candidate;
-    if (candidate) {
-      ghost.scale.set(candidate.upper.spec.cols, candidate.upper.spec.rows, 1);
-      ghost.quaternion
-        .copy(candidate.surfaceFit.rotation)
-        .multiply(
-          new T.Quaternion().setFromAxisAngle(
-            new T.Vector3(1, 0, 0),
-            -Math.PI / 2,
-          ),
-        );
-      ghost.position
-        .copy(candidate.surfaceFit.position)
-        .add(
-          new T.Vector3(
-            0,
-            -candidate.upper.spec.height / 2 + 0.02,
-            0,
-          ).applyQuaternion(candidate.surfaceFit.rotation),
-        );
-    }
-  } else {
-    $("#alignment").textContent = "";
-    ghost.visible = false;
-  }
-  controls.update();
-  renderer.render(scene, camera);
-}
+
 world
   .init()
   .then(() => {
