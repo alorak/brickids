@@ -1844,3 +1844,9 @@ dialog::backdrop {
     padding: 10px 12px 12px;
   }
 }
+
+
+.library-live-object,
+.library-live-object * {
+  cursor: none !important;
+}
