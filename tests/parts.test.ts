@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Scene, Vector3, Quaternion } from "three";
 import { catalog, colorPalette, connectors } from "../src/engine/catalog";
+import { bricklinkColors } from "../src/bricklink-colors";
 import { mating } from "../src/engine/connections";
 import { BrickWorld } from "../src/engine/world";
 const spec = (id: string) => catalog.find((s) => s.id === id)!;
@@ -23,7 +24,6 @@ test("primary palette matches the requested BrickLink / LEGO mapping", () => {
       ["Orange", "Bright Orange", 106, 4, "#FE8A18"],
       ["Dark Turquoise", "Bright Bluish Green", 107, 39, "#008F9B"],
       ["Black", "Black", 26, 11, "#05131D"],
-      ["White", "White", 1, 1, "#FFFFFF"],
     ],
   );
   for (const id of [
@@ -35,6 +35,19 @@ test("primary palette matches the requested BrickLink / LEGO mapping", () => {
     "slope-2x2",
   ])
     assert.ok(spec(id), id);
+});
+
+test("complete BrickLink picker contains 214 unique catalog colors", () => {
+  assert.equal(bricklinkColors.length, 214);
+  assert.equal(new Set(bricklinkColors.map((color) => color.id)).size, 214);
+  assert.ok(bricklinkColors.some((color) => color.id === 1 && color.name === "White"));
+  assert.ok(
+    bricklinkColors.some(
+      (color) => color.id === 247 && color.name === "Little Robots Blue",
+    ),
+  );
+  for (const color of bricklinkColors)
+    assert.match(color.hex, /^#[0-9A-F]{6}$/);
 });
 
 test("catalog parts have working bottom sockets, exact engagement and scene round trips", async () => {

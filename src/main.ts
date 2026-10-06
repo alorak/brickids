@@ -9,6 +9,7 @@ import { rotationAt, TURN_DURATION_MS } from "./engine/rotation";
 import { dragTarget } from "./engine/drag";
 import { BrickAudio } from "./engine/audio";
 import { catalog, colorPalette, colors, partLabel } from "./engine/catalog";
+import { bricklinkColors } from "./bricklink-colors";
 import { component } from "./engine/connections";
 import { messages, type Language } from "./i18n";
 import { setupMobile } from "./mobile";
@@ -19,8 +20,13 @@ let mobile: ReturnType<typeof setupMobile> | undefined;
 let language: Language =
   localStorage.getItem("bricks-language") === "tr" ? "tr" : "en";
 const SAVED_SCENE_KEY = "brickids-scene";
+const OTHER_COLOR_KEY = "brickids-other-color-id";
+const savedOtherColorId = Number(localStorage.getItem(OTHER_COLOR_KEY) ?? 1);
+let otherColor =
+  bricklinkColors.find((color) => color.id === savedOtherColorId) ??
+  bricklinkColors.find((color) => color.id === 1)!;
 const app = document.querySelector<HTMLDivElement>("#app")!;
-app.innerHTML = `<canvas id="world" aria-label="3D brick workspace"></canvas><header><a class="brand" href="./" aria-label="brickids"><span class="brand-main">brick</span><span class="brand-accent">ids</span></a><div class="top-actions"><button id="sound" class="icon-button" aria-pressed="true"></button><button id="library-toggle" class="header-tool" aria-controls="library" aria-expanded="false"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="7" width="10" height="8" rx="2"></rect><rect x="18" y="7" width="10" height="8" rx="2"></rect><rect x="4" y="18" width="10" height="8" rx="2"></rect><rect x="18" y="18" width="10" height="8" rx="2"></rect></svg></button><button id="scene-menu-toggle" class="header-tool" aria-haspopup="dialog"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 9h9l2 3h11v14H5z"></path><path d="M9 17h14M9 21h10"></path></svg></button></div></header><aside id="library"><div id="swatches"></div><div id="core-cards" class="cards-grid"></div><button id="more-parts" class="more-parts" aria-expanded="false" aria-controls="more-cards"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button><div id="more-cards" class="cards-grid more-cards" hidden></div></aside><section id="selection" class="selection" hidden><div id="selection-content"></div></section><div class="bottom-center"><div id="alignment" role="status"></div></div><div id="toast" role="status"></div><dialog id="scene-dialog" class="scene-dialog"><button id="close-scene-menu" class="close">×</button><div class="scene-menu-grid"><button id="scene-save" class="scene-menu-action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 5h16l4 4v18H7z"></path><path d="M11 5v8h11V5M11 21h12"></path></svg><span data-t="save"></span></button><button id="scene-import" class="scene-menu-action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 9h9l2 3h9v14H6z"></path><path d="M16 22V14M12 18l4-4 4 4"></path></svg><span data-t="importScene"></span></button><button id="scene-export" class="scene-menu-action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 9h9l2 3h9v14H6z"></path><path d="M16 14v8M12 18l4 4 4-4"></path></svg><span data-t="exportScene"></span></button><button id="scene-new" class="scene-menu-action danger"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 8h16v16H8z"></path><path d="M12 16h8M16 12v8"></path></svg><span data-t="newScene"></span></button></div><div class="scene-language"><button data-lang="en">EN</button><button data-lang="tr">TR</button></div></dialog><dialog id="delete-dialog" class="delete-dialog"><div class="delete-prompt">DELETE?</div><div class="delete-confirm-actions"><button id="delete-confirm" class="delete-confirm-yes" aria-label="Confirm delete"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="m7 17 6 6L26 9"></path></svg></button><button id="delete-cancel" class="delete-confirm-no" aria-label="Cancel delete"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 9l14 14M23 9 9 23"></path></svg></button></div></dialog><dialog id="help-dialog"><button id="close-help" class="close">×</button><div class="eyebrow" data-t="shortcuts"></div><h2 data-t="help"></h2><button id="demo" class="text-button" data-t="demo"></button><p data-t="helpText"></p><div class="key-row"><kbd>Q</kbd><kbd>E</kbd><span data-t="lift"></span></div><div class="key-row"><kbd>R</kbd><span data-t="axisY"></span></div><div class="key-row"><kbd>X</kbd><kbd>Z</kbd><span data-t="tiltAxes"></span></div><div class="key-row"><kbd data-t="doubleClick"></kbd><span data-t="seamHelp"></span></div><div class="key-row"><kbd>Delete</kbd><kbd>Backspace</kbd><span data-t="delete"></span></div><div class="key-row"><kbd>Space</kbd><span data-t="press"></span></div></dialog><input type="file" id="file" accept=".json" hidden><div id="loading" data-t="loading"></div>`;
+app.innerHTML = `<canvas id="world" aria-label="3D brick workspace"></canvas><header><a class="brand" href="./" aria-label="brickids"><span class="brand-main">brick</span><span class="brand-accent">ids</span></a><div class="top-actions"><button id="sound" class="icon-button" aria-pressed="true"></button><button id="library-toggle" class="header-tool" aria-controls="library" aria-expanded="false"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="7" width="10" height="8" rx="2"></rect><rect x="18" y="7" width="10" height="8" rx="2"></rect><rect x="4" y="18" width="10" height="8" rx="2"></rect><rect x="18" y="18" width="10" height="8" rx="2"></rect></svg></button><button id="scene-menu-toggle" class="header-tool" aria-haspopup="dialog"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 9h9l2 3h11v14H5z"></path><path d="M9 17h14M9 21h10"></path></svg></button></div></header><aside id="library"><div id="swatches"></div><div id="core-cards" class="cards-grid"></div><button id="more-parts" class="more-parts" aria-expanded="false" aria-controls="more-cards"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button><div id="more-cards" class="cards-grid more-cards" hidden></div></aside><section id="selection" class="selection" hidden><div id="selection-content"></div></section><div class="bottom-center"><div id="alignment" role="status"></div></div><div id="toast" role="status"></div><dialog id="scene-dialog" class="scene-dialog"><button id="close-scene-menu" class="close">×</button><div class="scene-menu-grid"><button id="scene-save" class="scene-menu-action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 5h16l4 4v18H7z"></path><path d="M11 5v8h11V5M11 21h12"></path></svg><span data-t="save"></span></button><button id="scene-import" class="scene-menu-action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 9h9l2 3h9v14H6z"></path><path d="M16 22V14M12 18l4-4 4 4"></path></svg><span data-t="importScene"></span></button><button id="scene-export" class="scene-menu-action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 9h9l2 3h9v14H6z"></path><path d="M16 14v8M12 18l4 4 4-4"></path></svg><span data-t="exportScene"></span></button><button id="scene-new" class="scene-menu-action danger"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 8h16v16H8z"></path><path d="M12 16h8M16 12v8"></path></svg><span data-t="newScene"></span></button></div><div class="scene-language"><button data-lang="en">EN</button><button data-lang="tr">TR</button></div></dialog><dialog id="color-dialog" class="color-dialog"><button id="close-color-dialog" class="close" aria-label="Close colors">×</button><div class="color-picker-top"><input id="color-search" type="search" autocomplete="off" spellcheck="false" placeholder="Search colors" aria-label="Search BrickLink colors"></div><div id="color-grid" class="color-grid"></div></dialog><dialog id="delete-dialog" class="delete-dialog"><div class="delete-prompt">DELETE?</div><div class="delete-confirm-actions"><button id="delete-confirm" class="delete-confirm-yes" aria-label="Confirm delete"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="m7 17 6 6L26 9"></path></svg></button><button id="delete-cancel" class="delete-confirm-no" aria-label="Cancel delete"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 9l14 14M23 9 9 23"></path></svg></button></div></dialog><dialog id="help-dialog"><button id="close-help" class="close">×</button><div class="eyebrow" data-t="shortcuts"></div><h2 data-t="help"></h2><button id="demo" class="text-button" data-t="demo"></button><p data-t="helpText"></p><div class="key-row"><kbd>Q</kbd><kbd>E</kbd><span data-t="lift"></span></div><div class="key-row"><kbd>R</kbd><span data-t="axisY"></span></div><div class="key-row"><kbd>X</kbd><kbd>Z</kbd><span data-t="tiltAxes"></span></div><div class="key-row"><kbd data-t="doubleClick"></kbd><span data-t="seamHelp"></span></div><div class="key-row"><kbd>Delete</kbd><kbd>Backspace</kbd><span data-t="delete"></span></div><div class="key-row"><kbd>Space</kbd><span data-t="press"></span></div></dialog><input type="file" id="file" accept=".json" hidden><div id="loading" data-t="loading"></div>`;
 const $ = <E extends HTMLElement = HTMLElement>(s: string) =>
   document.querySelector<E>(s)!;
 const text = (key: keyof typeof messages.en) => messages[language][key];
@@ -305,6 +311,13 @@ function renderCards() {
       });
       event.dataTransfer.setData("application/x-brickids-part", payload);
       event.dataTransfer.setData("text/plain", payload);
+      const preview = el.querySelector<HTMLImageElement>(".part-preview");
+      if (preview)
+        event.dataTransfer.setDragImage(
+          preview,
+          preview.clientWidth / 2,
+          preview.clientHeight / 2,
+        );
       libraryDragging = true;
       el.classList.add("dragging");
     };
@@ -493,23 +506,77 @@ function cancelPress() {
     $("#press")?.style.setProperty("--progress", "0%");
   }
 }
-$("#swatches").innerHTML = colorPalette
-  .map(
-    (color, i) =>
-      `<button class="swatch ${i === 0 ? "active" : ""}" style="--swatch:${color.hex}" data-color="${color.hex}" aria-label="${color.name}" title="${color.name}" aria-pressed="${i === 0}"></button>`,
-  )
-  .join("");
-document.querySelectorAll<HTMLElement>("[data-color]").forEach(
-  (el) =>
-    (el.onclick = () => {
-      currentColor = el.dataset.color!;
-      document.querySelectorAll<HTMLElement>("[data-color]").forEach((s) => {
-        s.classList.toggle("active", s === el);
-        s.setAttribute("aria-pressed", String(s === el));
-      });
-      renderCards();
+function renderSwatches() {
+  const quick = colorPalette
+    .map(
+      (color) =>
+        `<button class="swatch ${currentColor === color.hex ? "active" : ""}" style="--swatch:${color.hex}" data-quick-color="${color.hex}" aria-label="${color.name}" title="${color.name}" aria-pressed="${currentColor === color.hex}"></button>`,
+    )
+    .join("");
+  const otherActive =
+    currentColor === otherColor.hex &&
+    !colorPalette.some((color) => color.hex === currentColor);
+  $("#swatches").innerHTML =
+    quick +
+    `<button id="other-color" class="swatch other-swatch ${otherActive ? "active" : ""}" style="--swatch:${otherColor.hex}" aria-label="Other colors: ${otherColor.name}" title="${otherColor.name}" aria-pressed="${otherActive}"><span class="other-corner" aria-hidden="true"></span></button>`;
+
+  document.querySelectorAll<HTMLElement>("[data-quick-color]").forEach(
+    (el) =>
+      (el.onclick = () => {
+        currentColor = el.dataset.quickColor!;
+        renderSwatches();
+        renderCards();
+      }),
+  );
+  $("#other-color").onclick = () => {
+    const search = $<HTMLInputElement>("#color-search");
+    search.value = "";
+    renderColorGrid("");
+    $<HTMLDialogElement>("#color-dialog").showModal();
+    window.setTimeout(() => search.focus(), 0);
+  };
+}
+
+function renderColorGrid(query: string) {
+  const needle = query.trim().toLocaleLowerCase();
+  const filtered = needle
+    ? bricklinkColors.filter(
+        (color) =>
+          color.name.toLocaleLowerCase().includes(needle) ||
+          color.type.toLocaleLowerCase().includes(needle) ||
+          String(color.id).includes(needle),
+      )
+    : bricklinkColors;
+  const grid = $("#color-grid");
+  grid.replaceChildren(
+    ...filtered.map((color) => {
+      const button = document.createElement("button");
+      button.className = "color-option";
+      button.type = "button";
+      button.title = `${color.name} · ${color.type} · #${color.hex.replace("#", "")}`;
+      button.setAttribute("aria-label", `${color.name}, ${color.type}`);
+      const swatch = document.createElement("span");
+      swatch.className = "color-option-swatch";
+      swatch.style.background = color.hex;
+      const name = document.createElement("span");
+      name.className = "color-option-name";
+      name.textContent = color.name;
+      button.append(swatch, name);
+      button.onclick = () => {
+        otherColor = color;
+        localStorage.setItem(OTHER_COLOR_KEY, String(color.id));
+        currentColor = color.hex;
+        renderSwatches();
+        renderCards();
+        $<HTMLDialogElement>("#color-dialog").close();
+      };
+      return button;
     }),
-);
+  );
+}
+renderSwatches();
+$<HTMLInputElement>("#color-search").oninput = (event) =>
+  renderColorGrid((event.target as HTMLInputElement).value);
 document.querySelectorAll<HTMLElement>("[data-lang]").forEach(
   (el) =>
     (el.onclick = () => {
@@ -549,6 +616,11 @@ sceneDialog.addEventListener("click", (event) =>
   closeDialogFromBackdrop(sceneDialog, event),
 );
 $("#close-scene-menu").onclick = () => sceneDialog.close();
+const colorDialog = $<HTMLDialogElement>("#color-dialog");
+colorDialog.addEventListener("click", (event) =>
+  closeDialogFromBackdrop(colorDialog, event),
+);
+$("#close-color-dialog").onclick = () => colorDialog.close();
 const deleteDialogEl = $<HTMLDialogElement>("#delete-dialog");
 deleteDialogEl.addEventListener("click", (event) =>
   closeDialogFromBackdrop(deleteDialogEl, event),
@@ -897,6 +969,7 @@ window.addEventListener("keydown", (e) => {
     ) ||
     $<HTMLDialogElement>("#help-dialog").open ||
     $<HTMLDialogElement>("#scene-dialog").open ||
+    $<HTMLDialogElement>("#color-dialog").open ||
     $<HTMLDialogElement>("#delete-dialog").open
   )
     return;
