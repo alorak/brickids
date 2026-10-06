@@ -1,10 +1,5 @@
 import { partPreviews } from "./scene/part-preview";
-import {
-  baseplateStudField,
-  groundController,
-  groundOptions,
-  groundStyle,
-} from "./scene/ground";
+import { baseplateStudField, groundController } from "./scene/ground";
 import * as T from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
@@ -13,7 +8,7 @@ import { BrickWorld, type Brick, type Connection } from "./engine/world";
 import { rotationAt, TURN_DURATION_MS } from "./engine/rotation";
 import { dragTarget } from "./engine/drag";
 import { BrickAudio } from "./engine/audio";
-import { catalog, colors, partLabel } from "./engine/catalog";
+import { catalog, colorPalette, colors, partLabel } from "./engine/catalog";
 import { component } from "./engine/connections";
 import { messages, type Language } from "./i18n";
 import { setupMobile } from "./mobile";
@@ -23,8 +18,9 @@ import "./mobile.css";
 let mobile: ReturnType<typeof setupMobile> | undefined;
 let language: Language =
   localStorage.getItem("bricks-language") === "tr" ? "tr" : "en";
+const SAVED_SCENE_KEY = "brickids-scene";
 const app = document.querySelector<HTMLDivElement>("#app")!;
-app.innerHTML = `<canvas id="world" aria-label="3D brick workspace"></canvas><header><a class="brand" href="./" aria-label="brickids"><span class="brand-main">brick</span><span class="brand-accent">ids</span></a><div class="top-actions"><button id="help" class="icon-button">?</button><button id="sound" class="icon-button" aria-pressed="true"></button><div class="language"><button data-lang="en">EN</button><button data-lang="tr">TR</button></div><button id="library-toggle" class="library-toggle" aria-controls="library"><span>▦</span><span data-t="library"></span><span id="toggle-arrow">↗</span></button></div></header><aside id="library"><h2 data-t="library"></h2><label class="ground-control"><span class="eyebrow" data-t="ground"></span><select id="ground"></select></label><div class="color-heading eyebrow" data-t="color"></div><div id="swatches"></div><select id="part-filter" aria-label="Parts"></select><div id="cards"></div></aside><section id="selection" class="selection" hidden><div id="selection-content"></div></section><div class="bottom-center"><div id="alignment" role="status"></div></div><footer><div class="status"><button id="pause"><i></i><span data-t="live"></span></button><span class="footer-divider"></span><span id="counts"></span></div><div class="scene-actions"><button id="view">⌖</button><button id="save" data-t="save"></button><button id="load" data-t="load"></button><button id="reset" data-t="reset"></button></div></footer><div id="toast" role="status"></div><dialog id="help-dialog"><button id="close-help" class="close">×</button><div class="eyebrow" data-t="shortcuts"></div><h2 data-t="help"></h2><button id="demo" class="text-button" data-t="demo"></button><p data-t="helpText"></p><div class="key-row"><kbd>Q</kbd><kbd>E</kbd><span data-t="lift"></span></div><div class="key-row"><kbd>R</kbd><span data-t="axisY"></span></div><div class="key-row"><kbd>X</kbd><kbd>Z</kbd><span data-t="tiltAxes"></span></div><div class="key-row"><kbd data-t="doubleClick"></kbd><span data-t="seamHelp"></span></div><div class="key-row"><kbd>Delete</kbd><kbd>Backspace</kbd><span data-t="delete"></span></div><div class="key-row"><kbd>Space</kbd><span data-t="press"></span></div></dialog><input type="file" id="file" accept=".json" hidden><div id="loading" data-t="loading"></div>`;
+app.innerHTML = `<canvas id="world" aria-label="3D brick workspace"></canvas><header><a class="brand" href="./" aria-label="brickids"><span class="brand-main">brick</span><span class="brand-accent">ids</span></a><div class="top-actions"><button id="help" class="icon-button">?</button><button id="sound" class="icon-button" aria-pressed="true"></button><button id="library-toggle" class="header-tool" aria-controls="library" aria-expanded="false"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="7" width="10" height="8" rx="2"></rect><rect x="18" y="7" width="10" height="8" rx="2"></rect><rect x="4" y="18" width="10" height="8" rx="2"></rect><rect x="18" y="18" width="10" height="8" rx="2"></rect></svg></button><button id="scene-menu-toggle" class="header-tool" aria-haspopup="dialog"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 9h9l2 3h11v14H5z"></path><path d="M9 17h14M9 21h10"></path></svg></button></div></header><aside id="library"><div id="swatches"></div><div id="core-cards" class="cards-grid"></div><button id="more-parts" class="more-parts" aria-expanded="false" aria-controls="more-cards"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button><div id="more-cards" class="cards-grid more-cards" hidden></div></aside><section id="selection" class="selection" hidden><div id="selection-content"></div></section><div class="bottom-center"><div id="alignment" role="status"></div></div><div id="toast" role="status"></div><dialog id="scene-dialog" class="scene-dialog"><button id="close-scene-menu" class="close">×</button><div class="scene-menu-grid"><button id="scene-save" class="scene-menu-action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 5h16l4 4v18H7z"></path><path d="M11 5v8h11V5M11 21h12"></path></svg><span data-t="save"></span></button><button id="scene-import" class="scene-menu-action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 9h9l2 3h9v14H6z"></path><path d="M16 22V14M12 18l4-4 4 4"></path></svg><span data-t="importScene"></span></button><button id="scene-export" class="scene-menu-action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 9h9l2 3h9v14H6z"></path><path d="M16 14v8M12 18l4 4 4-4"></path></svg><span data-t="exportScene"></span></button><button id="scene-new" class="scene-menu-action danger"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 8h16v16H8z"></path><path d="M12 16h8M16 12v8"></path></svg><span data-t="newScene"></span></button></div><div class="scene-language"><button data-lang="en">EN</button><button data-lang="tr">TR</button></div></dialog><dialog id="help-dialog"><button id="close-help" class="close">×</button><div class="eyebrow" data-t="shortcuts"></div><h2 data-t="help"></h2><button id="demo" class="text-button" data-t="demo"></button><p data-t="helpText"></p><div class="key-row"><kbd>Q</kbd><kbd>E</kbd><span data-t="lift"></span></div><div class="key-row"><kbd>R</kbd><span data-t="axisY"></span></div><div class="key-row"><kbd>X</kbd><kbd>Z</kbd><span data-t="tiltAxes"></span></div><div class="key-row"><kbd data-t="doubleClick"></kbd><span data-t="seamHelp"></span></div><div class="key-row"><kbd>Delete</kbd><kbd>Backspace</kbd><span data-t="delete"></span></div><div class="key-row"><kbd>Space</kbd><span data-t="press"></span></div></dialog><input type="file" id="file" accept=".json" hidden><div id="loading" data-t="loading"></div>`;
 const $ = <E extends HTMLElement = HTMLElement>(s: string) =>
   document.querySelector<E>(s)!;
 const text = (key: keyof typeof messages.en) => messages[language][key];
@@ -92,24 +88,18 @@ grid.position.y = 0.003;
 (grid.material as T.Material).transparent = true;
 (grid.material as T.Material).opacity = 0.42;
 scene.add(grid);
-let currentGround = groundStyle(localStorage.getItem("bricks-ground"));
 const applyGround = groundController(
   floor.material,
   grid,
   baseplate,
   renderer.capabilities.getMaxAnisotropy(),
 );
-applyGround(currentGround);
-$("#ground").onchange = (event) => {
-  currentGround = groundStyle((event.target as HTMLSelectElement).value);
-  applyGround(currentGround);
-  localStorage.setItem("bricks-ground", currentGround);
-};
+// The simplified library is intentionally dedicated to the LEGO-style baseplate.
+applyGround("baseplate");
 
 const world = new BrickWorld(scene, (v) => audio.play(v));
 let selected: Brick | null = null,
   currentColor = colors[0],
-  paused = false,
   panelOpen = innerWidth > 720,
   toastTimer = 0,
   dirty = true;
@@ -262,43 +252,32 @@ function translate() {
   $("#help").title = text("help");
   $("#help").setAttribute("aria-label", text("help"));
   $("#close-help").setAttribute("aria-label", language === "tr" ? "Yardımı kapat" : "Close help");
+  $("#close-scene-menu").setAttribute("aria-label", language === "tr" ? "Menüyü kapat" : "Close menu");
   renderSoundButton();
-  $("#view").title = text("view");
-  $("#view").setAttribute("aria-label", text("view"));
   $("#library-toggle").setAttribute("aria-label", text("library"));
-  $("#ground").setAttribute("aria-label", text("ground"));
+  $("#scene-menu-toggle").setAttribute("aria-label", text("sceneMenu"));
+  $("#more-parts").setAttribute("aria-label", text("moreParts"));
   setLibraryOpen(panelOpen);
-  $("#pause span").textContent = text(paused ? "paused" : "live");
-  $("#ground").innerHTML = groundOptions
-    .map((style) => `<option value="${style}">${text(style)}</option>`)
-    .join("");
-  $<HTMLSelectElement>("#ground").value = currentGround;
-  $("#part-filter").setAttribute("aria-label", text("partCategory"));
-  $("#part-filter").innerHTML = ["all", "brick", "plate", "tile", "special"]
-    .map(
-      (key) =>
-        `<option value="${key}">${text(key as keyof typeof messages.en)}</option>`,
-    )
-    .join("");
-  $<HTMLSelectElement>("#part-filter").value = partFilter;
   renderCards();
   mobile?.translate();
   dirty = true;
 }
 const previewPart = partPreviews();
-let partFilter = "all";
-$("#part-filter").onchange = (event) => {
-  partFilter = (event.target as HTMLSelectElement).value;
-  renderCards();
-};
+const corePartIds = ["1x2", "1x4", "2x2", "2x4"] as const;
+let morePartsOpen = false;
+function partCard(s: (typeof catalog)[number]) {
+  return `<button class="brick-card" data-spec="${s.id}" aria-label="${text("add")} ${partLabel(s, language)}"><img class="part-preview" src="${previewPart(s, currentColor)}" alt="" draggable="false"><div class="card-description"><strong>${partLabel(s, language)}</strong><span class="add-circle">+</span></div></button>`;
+}
 function renderCards() {
-  $("#cards").innerHTML = catalog
-    .filter((s) => partFilter === "all" || (s.family ?? "brick") === partFilter)
-    .map(
-      (s) =>
-        `<button class="brick-card" data-spec="${s.id}" aria-label="${text("add")} ${partLabel(s, language)}"><img class="part-preview" src="${previewPart(s, currentColor)}" alt="" draggable="false"><div class="card-description"><strong>${partLabel(s, language)}</strong><span class="add-circle">+</span></div></button>`,
-    )
-    .join("");
+  const core = corePartIds
+    .map((id) => catalog.find((s) => s.id === id)!)
+    .filter(Boolean);
+  const extra = catalog.filter((s) => !corePartIds.includes(s.id as (typeof corePartIds)[number]));
+  $("#core-cards").innerHTML = core.map(partCard).join("");
+  $("#more-cards").innerHTML = extra.map(partCard).join("");
+  $("#more-cards").hidden = !morePartsOpen;
+  $("#more-parts").classList.toggle("open", morePartsOpen);
+  $("#more-parts").setAttribute("aria-expanded", String(morePartsOpen));
   document.querySelectorAll<HTMLElement>("[data-spec]").forEach(
     (el) =>
       (el.onclick = () => {
@@ -317,6 +296,10 @@ function renderCards() {
       }),
   );
 }
+$("#more-parts").onclick = () => {
+  morePartsOpen = !morePartsOpen;
+  renderCards();
+};
 function select(b: Brick | null) {
   cancelTurn();
   cancelPress();
@@ -480,10 +463,10 @@ function cancelPress() {
     $("#press")?.style.setProperty("--progress", "0%");
   }
 }
-$("#swatches").innerHTML = colors
+$("#swatches").innerHTML = colorPalette
   .map(
-    (c, i) =>
-      `<button class="swatch ${i === 0 ? "active" : ""}" style="--swatch:${c}" data-color="${c}" aria-label="${c}" aria-pressed="${i === 0}"></button>`,
+    (color, i) =>
+      `<button class="swatch ${i === 0 ? "active" : ""}" style="--swatch:${color.hex}" data-color="${color.hex}" aria-label="${color.name}" title="${color.name}" aria-pressed="${i === 0}"></button>`,
   )
   .join("");
 document.querySelectorAll<HTMLElement>("[data-color]").forEach(
@@ -514,9 +497,14 @@ function setLibraryOpen(open: boolean) {
   library.classList.toggle("closed", !open);
   document.documentElement.classList.toggle("library-open", open);
   $("#library-toggle").setAttribute("aria-expanded", String(open));
-  $("#toggle-arrow").textContent = open ? "↗" : "↙";
 }
 $("#library-toggle").onclick = () => setLibraryOpen(!panelOpen);
+$("#scene-menu-toggle").onclick = () => {
+  setLibraryOpen(false);
+  cancelInteraction();
+  $<HTMLDialogElement>("#scene-dialog").showModal();
+};
+$("#close-scene-menu").onclick = () => $<HTMLDialogElement>("#scene-dialog").close();
 $("#help").onclick = () => {
   cancelInteraction();
   $<HTMLDialogElement>("#help-dialog").showModal();
@@ -535,29 +523,24 @@ $("#sound").onclick = () => {
   renderSoundButton();
   audio.unlock();
 };
-$("#pause").onclick = () => {
-  paused = !paused;
-  $("#pause").classList.toggle("paused", paused);
-  $("#pause span").textContent = text(paused ? "paused" : "live");
+$("#scene-save").onclick = () => {
+  localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(world.serialize()));
+  toast(text("savedLocal"));
+  $<HTMLDialogElement>("#scene-dialog").close();
 };
-$("#view").onclick = () => {
-  cancelInteraction();
-  camera.position.set(14, 15, 19);
-  controls.target.set(0, 0.6, 0);
-};
-$("#save").onclick = () => {
+$("#scene-import").onclick = () => $<HTMLInputElement>("#file").click();
+$("#scene-export").onclick = () => {
   const blob = new Blob([JSON.stringify(world.serialize(), null, 2)], {
     type: "application/json",
   });
   const url = URL.createObjectURL(blob),
     a = document.createElement("a");
   a.href = url;
-  a.download = "my-bricks.json";
+  a.download = "brickids-scene.json";
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  toast(text("saved"));
+  toast(text("exported"));
 };
-$("#load").onclick = () => $<HTMLInputElement>("#file").click();
 $("#file").onchange = async () => {
   try {
     const file = $<HTMLInputElement>("#file").files?.[0];
@@ -568,19 +551,22 @@ $("#file").onchange = async () => {
     cancelPress();
     world.restore(data);
     select(null);
+    localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(world.serialize()));
     toast(text("loaded"));
+    $<HTMLDialogElement>("#scene-dialog").close();
   } catch {
     toast(text("error"));
   }
   $<HTMLInputElement>("#file").value = "";
 };
-$("#reset").onclick = () => {
-  if (confirm(text("resetAsk"))) {
-    cancelInteraction();
-    cancelPress();
-    world.clear();
-    select(null);
-  }
+$("#scene-new").onclick = () => {
+  if (!confirm(text("resetAsk"))) return;
+  cancelInteraction();
+  cancelPress();
+  world.clear();
+  select(null);
+  localStorage.removeItem(SAVED_SCENE_KEY);
+  $<HTMLDialogElement>("#scene-dialog").close();
 };
 $("#demo").onclick = () => {
   $<HTMLDialogElement>("#help-dialog").close();
@@ -755,7 +741,7 @@ function endDrag() {
     // Drag motion already resolves Y onto the first surface below. On release,
     // finish a nearby valid stud/socket alignment; otherwise just return the
     // piece to normal gravity and contacts.
-    const connected = world.drop(movedId, currentGround === "baseplate");
+    const connected = world.drop(movedId, true);
     if (connected) {
       audio.play(0.8, false, true);
       toast(text("connected"));
@@ -869,12 +855,10 @@ function frame(now: number) {
   requestAnimationFrame(frame);
   accumulator += Math.min((now - previous) / 1000, 0.05);
   previous = now;
-  if (!paused) {
-    while (accumulator >= 1 / 120) {
-      world.step();
-      accumulator -= 1 / 120;
-    }
-  } else accumulator = 0;
+  while (accumulator >= 1 / 120) {
+    world.step();
+    accumulator -= 1 / 120;
+  }
   if (turning) {
     const motion = turning,
       b = world.get(motion.id),
@@ -968,15 +952,21 @@ function frame(now: number) {
     $("#alignment").textContent = "";
     ghost.visible = false;
   }
-  $("#counts").textContent =
-    `${world.bricks.length} ${text("pieces")} · ${world.links.length} ${text("connections")}`;
   controls.update();
   renderer.render(scene, camera);
 }
 world
   .init()
   .then(() => {
-    starter();
+    const saved = localStorage.getItem(SAVED_SCENE_KEY);
+    if (saved) {
+      try {
+        world.restore(JSON.parse(saved));
+      } catch {
+        localStorage.removeItem(SAVED_SCENE_KEY);
+        starter();
+      }
+    } else starter();
     $("#loading").remove();
     requestAnimationFrame(frame);
   })

@@ -10,7 +10,7 @@ const labels = {
     buildHint: "Drag a brick or use the stick · two fingers to pan / zoom",
     cameraHint: "Drag anywhere to orbit · two fingers to pan / zoom",
     ready: "Aligned · tap Connect", demoHint: "The red brick is ready. Tap Connect.",
-    help: "In Build mode, tap a brick to select it. The transparent joystick at the bottom left moves it relative to your view; push gently for fine positioning. Release the stick to stop. The small buttons at the bottom right lift, lower, rotate and connect the brick. Tap … for X / Z tilt, upright, pick up / release, directional nudges, separate and delete. Extra tools stay closed until you ask for them. You can still drag bricks directly. Drag empty space to orbit, or switch to Camera to orbit over bricks. Move two fingers together to pan, and pinch to zoom. Save and open are available in the footer.",
+    help: "In Build mode, tap a brick to select it. The transparent joystick at the bottom left moves it relative to your view; push gently for fine positioning. Release the stick to stop. The small buttons at the bottom right lift, lower, rotate and connect the brick. Tap … for X / Z tilt, upright, pick up / release, directional nudges, separate and delete. Extra tools stay closed until you ask for them. You can still drag bricks directly. Drag empty space to orbit, or switch to Camera to orbit over bricks. Move two fingers together to pan, and pinch to zoom. Save, import, export and new-scene actions are available from the folder button at the top right.",
   },
   tr: {
     build: "Parça", camera: "Kamera", zoomIn: "Yakınlaştır", zoomOut: "Uzaklaştır", controls: "Dokunmatik kontroller",

@@ -1,14 +1,31 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Scene, Vector3, Quaternion } from "three";
-import { catalog, connectors } from "../src/engine/catalog";
+import { catalog, colorPalette, connectors } from "../src/engine/catalog";
 import { mating } from "../src/engine/connections";
 import { BrickWorld } from "../src/engine/world";
 const spec = (id: string) => catalog.find((s) => s.id === id)!;
 
-test("ten new catalog parts have working bottom sockets, exact engagement and scene round trips", async () => {
-  assert.equal(catalog.length, 13);
-  assert.equal(new Set(catalog.map((s) => s.id)).size, 13);
+test("primary palette matches the official solid LEGO/LDraw values", () => {
+  assert.deepEqual(
+    colorPalette.map(({ name, hex }) => [name, hex]),
+    [
+      ["Blue", "#1E5AA8"],
+      ["Medium Azure", "#68C3E2"],
+      ["Bright Green", "#58AB41"],
+      ["Yellow", "#FAC80A"],
+      ["Orange", "#D67923"],
+      ["Red", "#B40000"],
+      ["Black", "#1B2A34"],
+      ["White", "#F4F4F4"],
+    ],
+  );
+  for (const id of ["1x2", "1x4", "2x2", "2x4"]) assert.ok(spec(id), id);
+});
+
+test("catalog parts have working bottom sockets, exact engagement and scene round trips", async () => {
+  assert.equal(catalog.length, 14);
+  assert.equal(new Set(catalog.map((s) => s.id)).size, 14);
   for (const s of catalog.slice(3)) {
     const w = new BrickWorld(new Scene(), () => {});
     await w.init();

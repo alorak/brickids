@@ -1001,3 +1001,211 @@ dialog p {
     height: 25px;
   }
 }
+
+
+/* Icon-first library and scene menu. */
+.top-actions {
+  gap: 8px;
+}
+.header-tool {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d5dbd2;
+  border-radius: 12px;
+  background: #faf9f3e8;
+  color: #405248;
+  box-shadow: 0 4px 14px #3141370a;
+  backdrop-filter: blur(8px);
+}
+.header-tool:hover,
+.header-tool[aria-expanded="true"] {
+  background: #e6ede2;
+  border-color: #bdcbb9;
+}
+.header-tool svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+#library {
+  top: 82px;
+  right: 38px;
+  bottom: 24px;
+  width: 282px;
+  height: auto;
+  max-height: calc(100dvh - 106px);
+  padding: 18px;
+  border-radius: 18px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+#library.closed {
+  transform: translateX(330px);
+}
+#swatches {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 0 0 18px;
+}
+.swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
+  min-height: 42px;
+  border-radius: 12px;
+  border: 3px solid #faf9f5;
+  outline: 1px solid #d8ddd3;
+  box-shadow: inset 0 0 0 1px #ffffff55;
+}
+.swatch.active {
+  outline: 3px solid #516b5a;
+  outline-offset: 1px;
+}
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.cards-grid .brick-card {
+  min-width: 0;
+}
+.cards-grid .part-preview {
+  height: 72px;
+}
+.cards-grid .card-description {
+  min-height: 40px;
+  padding: 7px 8px;
+}
+.cards-grid .card-description strong {
+  font-size: 10px;
+}
+.more-parts {
+  width: 100%;
+  height: 38px;
+  margin: 10px 0 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d9ded5;
+  border-radius: 10px;
+  background: #f0f2ec;
+  color: #617166;
+}
+.more-parts:hover {
+  background: #e7ece3;
+}
+.more-parts svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  transition: transform 160ms ease;
+}
+.more-parts.open svg {
+  transform: rotate(180deg);
+}
+.more-cards {
+  margin-top: 8px;
+}
+.more-cards[hidden] {
+  display: none;
+}
+
+.scene-dialog {
+  width: 360px;
+  padding: 28px;
+}
+.scene-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+.scene-menu-action {
+  min-height: 110px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  border: 1px solid #d7ddd2;
+  border-radius: 14px;
+  background: #f2f3ed;
+  color: #405047;
+  font: 650 12px "Manrope", sans-serif;
+}
+.scene-menu-action:hover {
+  background: #e7ece3;
+}
+.scene-menu-action svg {
+  width: 32px;
+  height: 32px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.scene-menu-action.danger {
+  color: #9e493c;
+  background: #fff8f4;
+  border-color: #ead9d2;
+}
+.scene-language {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e0e3db;
+}
+.scene-language button {
+  min-width: 48px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  color: #7a837b;
+}
+.scene-language button.active {
+  background: #dfe8dc;
+  color: #34483b;
+  font-weight: 700;
+}
+
+.selection {
+  bottom: 28px;
+}
+
+@media (max-width: 720px) {
+  .header-tool {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+  }
+  #library {
+    top: 72px;
+    right: 14px;
+    bottom: 14px;
+    width: min(270px, calc(100vw - 28px));
+    max-height: calc(100dvh - 86px);
+    padding: 15px;
+  }
+  .scene-dialog {
+    width: min(340px, calc(100vw - 24px));
+    padding: 22px;
+  }
+  .scene-menu-action {
+    min-height: 96px;
+  }
+  .selection {
+    bottom: 18px;
+  }
+}
