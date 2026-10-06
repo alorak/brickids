@@ -758,31 +758,142 @@ function placeLibraryPart(specId: string, color: string, target: T.Vector3) {
   audio.unlock();
   return brick;
 }
-canvas.addEventListener("dragover", (event) => {
-  const types = Array.from(event.dataTransfer?.types ?? []);
-  if (
-    !types.includes("application/x-brickids-part") &&
-    !types.includes("text/plain")
-  )
-    return;
-  event.preventDefault();
-  if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
-});
-canvas.addEventListener("drop", (event) => {
-  const raw =
-    event.dataTransfer?.getData("application/x-brickids-part") ||
-    event.dataTransfer?.getData("text/plain");
-  if (!raw) return;
-  event.preventDefault();
-  event.stopPropagation();
-  try {
-    const payload = JSON.parse(raw) as { spec?: string; color?: string };
-    if (!payload.spec || !payload.color) return;
-    placeLibraryPart(payload.spec, payload.color, workspacePoint(event));
-  } catch {
-    toast(text("spawnBlocked"));
-  }
-});
+type LibraryPointerDrag = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  specId: string;
+  color: string;
+  source: HTMLElement;
+  brickId: number | null;
+  started: boolean;
+};
+let libraryPointerDrag: LibraryPointerDrag | null = null;
+
+function beginLibraryPointerDrag(
+  source: HTMLElement,
+  event: PointerEvent,
+) {
+  libraryPointerDrag = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    specId: source.dataset.spec!,
+    color: currentColor,
+    source,
+    brickId: null,
+    started: false,
+  };
+}
+function pointerInsideLibrary(event: { clientX: number; clientY: number }) {
+  const rect = $("#library").getBoundingClientRect();
+  return (
+    event.clientX >= rect.left &&
+    event.clientX <= rect.right &&
+    event.clientY >= rect.top &&
+    event.clientY <= rect.bottom
+  );
+}
+function cancelLibraryPointerDrag(removeBrick = true) {
+  const state = libraryPointerDrag;
+  if (!state) return;
+  if (removeBrick && state.brickId !== null) world.remove(state.brickId);
+  state.source.classList.remove("dragging-live");
+  document.documentElement.classList.remove("library-live-drag");
+  controls.enabled = true;
+  libraryPointerDrag = null;
+  window.setTimeout(() => (libraryDragging = false), 0);
+  dirty = true;
+}
+window.addEventListener(
+  "pointermove",
+  (event) => {
+    const state = libraryPointerDrag;
+    if (!state || event.pointerId !== state.pointerId) return;
+    if (!state.started) {
+      if (
+        Math.hypot(
+          event.clientX - state.startX,
+          event.clientY - state.startY,
+        ) < 6
+      )
+        return;
+      state.started = true;
+      libraryDragging = true;
+      state.source.classList.add("dragging-live");
+      document.documentElement.classList.add("library-live-drag");
+    }
+    event.preventDefault();
+
+    // Do not create a browser drag ghost. The moment the pointer leaves the
+    // sidebar, create the real Three.js brick and move that actual object.
+    if (state.brickId === null) {
+      if (pointerInsideLibrary(event)) return;
+      if (world.bricks.length >= 250) {
+        toast(text("limit"));
+        cancelLibraryPointerDrag();
+        return;
+      }
+      const spec = catalog.find((candidate) => candidate.id === state.specId);
+      if (!spec) {
+        cancelLibraryPointerDrag();
+        return;
+      }
+      const target = workspacePoint(event);
+      const brick = world.spawnHeld(
+        spec,
+        state.color,
+        new T.Vector3(target.x, 6, target.z),
+      );
+      if (!brick) {
+        toast(text("spawnBlocked"));
+        cancelLibraryPointerDrag();
+        return;
+      }
+      state.brickId = brick.id;
+      controls.enabled = false;
+      audio.unlock();
+    }
+    if (state.brickId !== null) {
+      world.snapDown(state.brickId, workspacePoint(event));
+      dirty = true;
+    }
+  },
+  { capture: true },
+);
+window.addEventListener(
+  "pointerup",
+  (event) => {
+    const state = libraryPointerDrag;
+    if (!state || event.pointerId !== state.pointerId) return;
+    if (!state.started) {
+      libraryPointerDrag = null;
+      return;
+    }
+    event.preventDefault();
+    const brickId = state.brickId;
+    if (brickId !== null) {
+      if (pointerInsideLibrary(event)) {
+        world.remove(brickId);
+      } else {
+        world.snapDown(brickId, workspacePoint(event));
+        world.drop(brickId, true);
+        const brick = world.bricks.find((candidate) => candidate.id === brickId);
+        if (brick) select(brick);
+      }
+    }
+    cancelLibraryPointerDrag(false);
+  },
+  { capture: true },
+);
+window.addEventListener(
+  "pointercancel",
+  (event) => {
+    if (libraryPointerDrag?.pointerId !== event.pointerId) return;
+    cancelLibraryPointerDrag();
+  },
+  { capture: true },
+);
 let seamPointer: { pointerId: number; x: number; y: number; link: Connection } | null = null;
 let seamClick: Connection | null = null;
 function pickSeam() {
