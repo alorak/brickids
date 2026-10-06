@@ -115,6 +115,24 @@ export const catalog: BrickSpec[] = [
     family: "special",
   },
   { id: "1x4", cols: 4, rows: 1, height: 1.2, label: "1 × 4" },
+  {
+    id: "plate-1x4",
+    cols: 4,
+    rows: 1,
+    height: 0.4,
+    label: "Plate 1 × 4",
+    labelTr: "Plaka 1 × 4",
+    family: "plate",
+  },
+  {
+    id: "plate-2x2",
+    cols: 2,
+    rows: 2,
+    height: 0.4,
+    label: "Plate 2 × 2",
+    labelTr: "Plaka 2 × 2",
+    family: "plate",
+  },
 ];
 /** Seven quick-access colours. The eighth UI slot is the persisted "Other"
  * colour selected from the complete BrickLink catalog.
