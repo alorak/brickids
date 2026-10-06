@@ -127,7 +127,7 @@ export const colorPalette = [
   { name: "Black", hex: "#1B2A34" },
   { name: "White", hex: "#F4F4F4" },
 ] as const;
-export const colors = colorPalette.map((c) => c.hex);
+export const colors: string[] = colorPalette.map((c) => c.hex);
 export function partLabel(s: BrickSpec, language: string) {
   return language === "tr" ? (s.labelTr ?? s.label) : s.label;
 }
