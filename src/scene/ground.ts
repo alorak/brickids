@@ -1,4 +1,5 @@
 import * as T from "three";
+import { BASEPLATE_VISUAL_SPAN } from "../baseplate";
 
 export const groundOptions = ["baseplate", "ivory", "sand", "slate", "grass"] as const;
 export type GroundStyle = (typeof groundOptions)[number];
@@ -14,7 +15,7 @@ export function groundStyle(value: string | null): GroundStyle {
  * Physics intentionally remains the existing flat floor; the studs are visual
  * sockets/studs entering the underside of pieces placed at ground level.
  */
-export function baseplateStudField(span = 120) {
+export function baseplateStudField(span = BASEPLATE_VISUAL_SPAN) {
   const count = Math.max(2, Math.floor(span));
   const geometry = new T.CylinderGeometry(0.3, 0.3, 0.18, 20);
   const material = new T.MeshPhysicalMaterial({
