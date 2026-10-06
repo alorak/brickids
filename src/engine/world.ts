@@ -30,6 +30,7 @@ export class BrickWorld {
   links: Connection[] = [];
   held = new Set<number>();
   nextId = 1;
+  physicsEnabled = true;
   private elapsed = 0;
   private impactTimes = new Map<string, number>();
   private quietUntil = new Map<number, number>();
@@ -207,7 +208,23 @@ export class BrickWorld {
       b.mesh.quaternion.copy(b.rotation);
     }
   }
+  setPhysicsEnabled(enabled: boolean) {
+    if (this.physicsEnabled === enabled) return;
+    this.physicsEnabled = enabled;
+    for (const brick of this.bricks) {
+      if (!brick.body.isDynamic()) continue;
+      brick.body.setLinvel({ x: 0, y: 0, z: 0 }, false);
+      brick.body.setAngvel({ x: 0, y: 0, z: 0 }, false);
+      if (enabled) brick.body.wakeUp();
+      else brick.body.sleep();
+    }
+    this.sync();
+  }
   step() {
+    if (!this.physicsEnabled) {
+      this.sync();
+      return;
+    }
     // Capture incoming motion before the solver removes impact velocity.
     const incoming = new Map(
       this.bricks.map((b) => [
@@ -306,6 +323,8 @@ export class BrickWorld {
       b.body.setBodyType(R.RigidBodyType.Dynamic, true);
       b.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
       b.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+      if (this.physicsEnabled) b.body.wakeUp();
+      else b.body.sleep();
     }
     this.held.clear();
   }
