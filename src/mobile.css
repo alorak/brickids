@@ -273,3 +273,30 @@ html.touch-layout #selection.selection {
 .touch-layout .brick-card:active {
   background: #e6f1fd;
 }
+
+
+/* The mobile toolbox keeps the same persistent titlebar collapse behavior. */
+.touch-layout #library {
+  padding: 0;
+  overflow: hidden;
+}
+.touch-layout #library.collapsed {
+  max-height: none;
+  bottom: auto;
+}
+.touch-layout .library-titlebar {
+  min-height: 42px;
+}
+.touch-layout .library-body {
+  padding: 10px 12px 12px;
+  max-height: calc(100dvh - var(--safe-top) - 198px);
+  overflow-y: auto;
+}
+@media (max-height: 500px) and (min-width: 540px) {
+  .touch-layout #library {
+    padding: 0;
+  }
+  .touch-layout .library-body {
+    max-height: calc(100dvh - var(--safe-top) - 178px);
+  }
+}
