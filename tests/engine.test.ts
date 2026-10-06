@@ -480,3 +480,37 @@ test("snapDown ignores pointer height and settles on the first surface below", a
   assert.ok(held.position.y <= supportedY + 0.05);
   w.world.free();
 });
+
+
+test("drop auto-snaps a nearby tilted brick without making live preview magnetic", async () => {
+  const w = new BrickWorld(new Scene(), () => {});
+  await w.init();
+  const base = w.add(catalog[1], "#3e7b9b", new Vector3(0, 0.6, 0));
+  const tilt = new Quaternion().setFromAxisAngle(
+    new Vector3(0, 0, 1),
+    (10 * Math.PI) / 180,
+  );
+  const top = w.add(
+    catalog[1],
+    "#df553e",
+    new Vector3(0.3, 2.1, 0),
+    tilt,
+  );
+  w.grab(top.id);
+
+  assert.equal(
+    w.candidate(top.id),
+    null,
+    "live candidate keeps the conservative tilt tolerance",
+  );
+  assert.equal(w.links.length, 0);
+  assert.ok(w.drop(top.id), "release uses the wider drop-only assist");
+  assert.equal(w.held.size, 0);
+  assert.equal(w.links.length, 1);
+  assert.equal(component(top.id, w.links).size, 2);
+  assert.ok(top.rotation.angleTo(base.rotation) < 1e-5);
+  assert.ok(Math.abs(top.position.x - base.position.x) < 1e-5);
+  assert.ok(Math.abs(top.position.z - base.position.z) < 1e-5);
+
+  w.world.free();
+});
