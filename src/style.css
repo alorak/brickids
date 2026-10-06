@@ -1862,6 +1862,7 @@ dialog::backdrop {
 }
 .library-body {
   display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
@@ -1870,6 +1871,7 @@ dialog::backdrop {
   flex: 0 0 auto;
 }
 .library-parts-scroll {
+  width: 100%;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
