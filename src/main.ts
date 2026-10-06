@@ -251,43 +251,32 @@ function translate() {
   $("#help").title = text("help");
   $("#help").setAttribute("aria-label", text("help"));
   $("#close-help").setAttribute("aria-label", language === "tr" ? "Yardımı kapat" : "Close help");
+  $("#close-scene-menu").setAttribute("aria-label", language === "tr" ? "Menüyü kapat" : "Close menu");
   renderSoundButton();
-  $("#view").title = text("view");
-  $("#view").setAttribute("aria-label", text("view"));
   $("#library-toggle").setAttribute("aria-label", text("library"));
-  $("#ground").setAttribute("aria-label", text("ground"));
+  $("#scene-menu-toggle").setAttribute("aria-label", text("sceneMenu"));
+  $("#more-parts").setAttribute("aria-label", text("moreParts"));
   setLibraryOpen(panelOpen);
-  $("#pause span").textContent = text(paused ? "paused" : "live");
-  $("#ground").innerHTML = groundOptions
-    .map((style) => `<option value="${style}">${text(style)}</option>`)
-    .join("");
-  $<HTMLSelectElement>("#ground").value = currentGround;
-  $("#part-filter").setAttribute("aria-label", text("partCategory"));
-  $("#part-filter").innerHTML = ["all", "brick", "plate", "tile", "special"]
-    .map(
-      (key) =>
-        `<option value="${key}">${text(key as keyof typeof messages.en)}</option>`,
-    )
-    .join("");
-  $<HTMLSelectElement>("#part-filter").value = partFilter;
   renderCards();
   mobile?.translate();
   dirty = true;
 }
 const previewPart = partPreviews();
-let partFilter = "all";
-$("#part-filter").onchange = (event) => {
-  partFilter = (event.target as HTMLSelectElement).value;
-  renderCards();
-};
+const corePartIds = ["1x2", "1x4", "2x2", "2x4"] as const;
+let morePartsOpen = false;
+function partCard(s: (typeof catalog)[number]) {
+  return `<button class="brick-card" data-spec="${s.id}" aria-label="${text("add")} ${partLabel(s, language)}"><img class="part-preview" src="${previewPart(s, currentColor)}" alt="" draggable="false"><div class="card-description"><strong>${partLabel(s, language)}</strong><span class="add-circle">+</span></div></button>`;
+}
 function renderCards() {
-  $("#cards").innerHTML = catalog
-    .filter((s) => partFilter === "all" || (s.family ?? "brick") === partFilter)
-    .map(
-      (s) =>
-        `<button class="brick-card" data-spec="${s.id}" aria-label="${text("add")} ${partLabel(s, language)}"><img class="part-preview" src="${previewPart(s, currentColor)}" alt="" draggable="false"><div class="card-description"><strong>${partLabel(s, language)}</strong><span class="add-circle">+</span></div></button>`,
-    )
-    .join("");
+  const core = corePartIds
+    .map((id) => catalog.find((s) => s.id === id)!)
+    .filter(Boolean);
+  const extra = catalog.filter((s) => !corePartIds.includes(s.id as (typeof corePartIds)[number]));
+  $("#core-cards").innerHTML = core.map(partCard).join("");
+  $("#more-cards").innerHTML = extra.map(partCard).join("");
+  $("#more-cards").hidden = !morePartsOpen;
+  $("#more-parts").classList.toggle("open", morePartsOpen);
+  $("#more-parts").setAttribute("aria-expanded", String(morePartsOpen));
   document.querySelectorAll<HTMLElement>("[data-spec]").forEach(
     (el) =>
       (el.onclick = () => {
@@ -306,6 +295,10 @@ function renderCards() {
       }),
   );
 }
+$("#more-parts").onclick = () => {
+  morePartsOpen = !morePartsOpen;
+  renderCards();
+};
 function select(b: Brick | null) {
   cancelTurn();
   cancelPress();
@@ -469,10 +462,10 @@ function cancelPress() {
     $("#press")?.style.setProperty("--progress", "0%");
   }
 }
-$("#swatches").innerHTML = colors
+$("#swatches").innerHTML = colorPalette
   .map(
-    (c, i) =>
-      `<button class="swatch ${i === 0 ? "active" : ""}" style="--swatch:${c}" data-color="${c}" aria-label="${c}" aria-pressed="${i === 0}"></button>`,
+    (color, i) =>
+      `<button class="swatch ${i === 0 ? "active" : ""}" style="--swatch:${color.hex}" data-color="${color.hex}" aria-label="${color.name}" title="${color.name}" aria-pressed="${i === 0}"></button>`,
   )
   .join("");
 document.querySelectorAll<HTMLElement>("[data-color]").forEach(
@@ -503,7 +496,6 @@ function setLibraryOpen(open: boolean) {
   library.classList.toggle("closed", !open);
   document.documentElement.classList.toggle("library-open", open);
   $("#library-toggle").setAttribute("aria-expanded", String(open));
-  $("#toggle-arrow").textContent = open ? "↗" : "↙";
 }
 $("#library-toggle").onclick = () => setLibraryOpen(!panelOpen);
 $("#help").onclick = () => {
@@ -744,7 +736,7 @@ function endDrag() {
     // Drag motion already resolves Y onto the first surface below. On release,
     // finish a nearby valid stud/socket alignment; otherwise just return the
     // piece to normal gravity and contacts.
-    const connected = world.drop(movedId, currentGround === "baseplate");
+    const connected = world.drop(movedId, true);
     if (connected) {
       audio.play(0.8, false, true);
       toast(text("connected"));
