@@ -1850,3 +1850,81 @@ dialog::backdrop {
 .library-live-object * {
   cursor: none !important;
 }
+
+
+/* Keep quick colors fixed while only the part catalog scrolls. */
+#library {
+  display: flex;
+  flex-direction: column;
+}
+.library-titlebar {
+  flex: 0 0 auto;
+}
+.library-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+#swatches {
+  flex: 0 0 auto;
+}
+.library-parts-scroll {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding-right: 3px;
+}
+
+/* Sound and physics match the adjacent scene button in outer size. */
+.icon-button,
+.header-tool {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+}
+.icon-button {
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.icon-button svg,
+.header-tool svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Off means visibly off: red surface, white glyph. */
+#sound.sound-off,
+#physics.physics-off {
+  color: #ffffff;
+  background: #d7443e;
+  border-color: #b92f2a;
+  box-shadow: 0 4px 14px #7b1f1b22;
+}
+#sound.sound-off:hover,
+#physics.physics-off:hover {
+  color: #ffffff;
+  background: #c93631;
+  border-color: #a92824;
+}
+
+@media (max-width: 720px) {
+  .icon-button,
+  .header-tool {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+  }
+  .icon-button svg,
+  .header-tool svg {
+    width: 21px;
+    height: 21px;
+  }
+}
