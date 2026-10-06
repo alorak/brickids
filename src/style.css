@@ -1503,19 +1503,7 @@ dialog::backdrop {
 }
 
 
-/* Object-style library drag preview and complete BrickLink color picker. */
-.brick-drag-image {
-  position: fixed;
-  left: -2000px;
-  top: -2000px;
-  width: 150px;
-  height: 96px;
-  padding: 0;
-  object-fit: contain;
-  pointer-events: none;
-  z-index: -1;
-}
-
+/* Complete BrickLink color picker and compact scene modal. */
 .other-swatch {
   position: relative;
   overflow: hidden;
