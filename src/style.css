@@ -1234,3 +1234,270 @@ dialog p {
   opacity: 0.42;
   transform: scale(0.98);
 }
+
+
+/* Blue application theme + compact image-first library cards. */
+:root {
+  --ui-blue: #0055bf;
+  --ui-blue-dark: #003f8f;
+  --ui-blue-ink: #173b63;
+  --ui-blue-soft: #eaf3ff;
+  --ui-blue-soft-2: #dcecff;
+  --ui-blue-border: #b9d0eb;
+  --ui-muted: #72849a;
+  color: #26394d;
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible {
+  outline-color: var(--ui-blue);
+}
+
+.brand-main {
+  color: #20364d;
+}
+.brand-accent {
+  color: var(--ui-blue);
+}
+
+.icon-button,
+.header-tool {
+  border-color: var(--ui-blue-border);
+  color: var(--ui-blue-dark);
+  background: #f8fbffeb;
+}
+.icon-button:hover,
+.header-tool:hover,
+.header-tool[aria-expanded="true"] {
+  background: var(--ui-blue-soft);
+  border-color: #8db5e3;
+}
+
+#library,
+.selection,
+dialog {
+  border-color: #dbe7f4;
+  box-shadow: 0 12px 35px #163c6812;
+}
+
+.swatch.active {
+  outline-color: var(--ui-blue);
+}
+
+.brick-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 118px;
+  border-color: #dce5ef;
+  background: #f8fafc;
+}
+.brick-card:hover {
+  background: #f0f6fd;
+  border-color: #a9c7e7;
+}
+.cards-grid .part-preview,
+.part-preview {
+  width: 100%;
+  height: 118px;
+  padding: 7px 8px 18px;
+  object-fit: contain;
+  display: block;
+}
+.card-description {
+  display: none !important;
+}
+.part-card-label {
+  position: absolute;
+  left: 11px;
+  bottom: 9px;
+  max-width: calc(100% - 42px);
+  color: #355370;
+  font:
+    650 11px "DM Sans",
+    sans-serif;
+  letter-spacing: 0.1px;
+  opacity: 0.72;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.brick-card .add-circle {
+  position: absolute;
+  right: 9px;
+  bottom: 7px;
+  width: 27px;
+  height: 27px;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ui-blue-soft-2);
+  color: var(--ui-blue-dark);
+  font-size: 20px;
+  line-height: 1;
+  opacity: 0;
+  transform: scale(0.82);
+  transition:
+    opacity 130ms ease,
+    transform 130ms ease,
+    background 130ms ease;
+  pointer-events: none;
+}
+.brick-card:hover .add-circle,
+.brick-card:focus-visible .add-circle {
+  opacity: 1;
+  transform: scale(1);
+}
+.brick-card:hover .part-card-label,
+.brick-card:focus-visible .part-card-label {
+  opacity: 0.92;
+}
+
+.more-parts {
+  border-color: #cbdced;
+  background: #f0f6fc;
+  color: #50759a;
+}
+.more-parts:hover {
+  background: var(--ui-blue-soft);
+}
+
+.selection-icon-button {
+  border-color: #cbdced;
+  background: #edf5fd;
+  color: #285b8d;
+}
+.selection-icon-button:not(:disabled):hover {
+  background: #dfeefe;
+}
+.separate-icon:disabled {
+  background: #f2f5f8;
+}
+.delete-icon {
+  color: #a64c3d;
+  background: #fff8f4;
+  border-color: #ead7d0;
+}
+
+#alignment {
+  color: #60758b;
+}
+#alignment.ready {
+  background: #e5f1ff;
+  color: #17558f;
+}
+
+#toast {
+  background: #164a7d;
+}
+
+.close {
+  color: #416789;
+}
+.close:hover {
+  background: #e8f2fc;
+}
+
+.scene-menu-action {
+  border-color: #cbdced;
+  background: #f2f7fc;
+  color: #294f75;
+}
+.scene-menu-action:hover {
+  background: #e4f0fc;
+}
+.scene-language {
+  border-top-color: #dbe6f0;
+}
+.scene-language button {
+  color: #72849a;
+}
+.scene-language button.active {
+  background: #deedff;
+  color: #164e85;
+}
+
+dialog {
+  color: #29435d;
+}
+dialog::backdrop {
+  background: #15395a55;
+}
+
+/* App-styled icon-only deletion confirmation. */
+.delete-dialog {
+  width: 300px;
+  padding: 30px 28px 26px;
+  text-align: center;
+}
+.delete-prompt {
+  color: #2a4058;
+  font:
+    750 18px "Manrope",
+    sans-serif;
+  letter-spacing: 1.6px;
+}
+.delete-confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 24px;
+}
+.delete-confirm-actions button {
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+}
+.delete-confirm-actions svg {
+  width: 31px;
+  height: 31px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.delete-confirm-yes {
+  color: #2f8f4e;
+  background: #e7f6eb;
+  border: 1px solid #b9dfc4;
+}
+.delete-confirm-yes:hover {
+  background: #daf0e0;
+}
+.delete-confirm-no {
+  color: #747d87;
+  background: #f1f3f5;
+  border: 1px solid #d7dde2;
+}
+.delete-confirm-no:hover {
+  background: #e7eaed;
+}
+
+@media (hover: none) {
+  .brick-card .add-circle {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .brick-card {
+    min-height: 108px;
+  }
+  .cards-grid .part-preview,
+  .part-preview {
+    height: 108px;
+  }
+  .part-card-label {
+    left: 9px;
+    bottom: 7px;
+    font-size: 10px;
+  }
+  .delete-dialog {
+    width: min(290px, calc(100vw - 28px));
+  }
+}
