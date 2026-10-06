@@ -285,6 +285,8 @@ function translate() {
   renderPhysicsButton();
   $("#library-titlebar").setAttribute("aria-label", text("library"));
   $("#scene-menu-toggle").setAttribute("aria-label", text("sceneMenu"));
+  $(".brand").setAttribute("aria-label", `brickids · ${text("save")}`);
+  $(".brand").title = text("save");
   $("#more-parts").setAttribute("aria-label", text("moreParts"));
   setLibraryOpen(panelOpen);
   renderCards();
@@ -692,10 +694,15 @@ $("#physics").onclick = () => {
   renderPhysicsButton();
   dirty = true;
 };
-$("#scene-save").onclick = () => {
+function saveSceneLocal() {
   localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(world.serialize()));
   toast(text("savedLocal"));
   $<HTMLDialogElement>("#scene-dialog").close();
+}
+$("#scene-save").onclick = saveSceneLocal;
+$(".brand").onclick = (event) => {
+  event.preventDefault();
+  saveSceneLocal();
 };
 $("#scene-import").onclick = () => $<HTMLInputElement>("#file").click();
 $("#scene-export").onclick = () => {
