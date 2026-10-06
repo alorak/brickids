@@ -799,7 +799,10 @@ function cancelLibraryPointerDrag(removeBrick = true) {
   if (!state) return;
   if (removeBrick && state.brickId !== null) world.remove(state.brickId);
   state.source.classList.remove("dragging-live");
-  document.documentElement.classList.remove("library-live-drag");
+  document.documentElement.classList.remove(
+    "library-live-drag",
+    "library-live-object",
+  );
   controls.enabled = true;
   libraryPointerDrag = null;
   window.setTimeout(() => (libraryDragging = false), 0);
@@ -851,6 +854,7 @@ window.addEventListener(
         return;
       }
       state.brickId = brick.id;
+      document.documentElement.classList.add("library-live-object");
       controls.enabled = false;
       audio.unlock();
     }
