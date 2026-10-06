@@ -921,6 +921,112 @@ function starter() {
   world.placeNew(catalog[0], color("Dark Turquoise"), new T.Vector3(1, 0, -2));
 }
 
+let previous = performance.now(),
+  accumulator = 0;
+function frame(now: number) {
+  requestAnimationFrame(frame);
+  accumulator += Math.min((now - previous) / 1000, 0.05);
+  previous = now;
+  while (accumulator >= 1 / 120) {
+    world.step();
+    accumulator -= 1 / 120;
+  }
+  if (turning) {
+    const motion = turning,
+      b = world.get(motion.id),
+      progress = Math.min(1, (now - motion.start) / TURN_DURATION_MS);
+    if (!b || !world.held.has(motion.id)) {
+      cancelTurn();
+    } else if (
+      !world.transform(
+        motion.id,
+        motion.position,
+        rotationAt(motion.from, motion.to, progress),
+      )
+    ) {
+      cancelTurn();
+      toast(text("blocked"));
+    } else if (progress === 1) cancelTurn();
+  }
+  if (pressing) {
+    const p = pressing,
+      t = Math.min(1, (now - p.start) / 450),
+      b = world.get(p.id),
+      anchor = world.get(p.anchor);
+    if (!b || !anchor || !world.held.has(b.id)) {
+      cancelPress();
+    } else {
+      const progress = t * t * (3 - 2 * t);
+      const target = p.origin.clone().lerp(p.target, progress);
+      const rotation = p.fromRotation.clone().slerp(p.rotation, progress);
+      if (!world.transform(p.id, target, rotation)) {
+        cancelPress();
+        toast(text("blocked"));
+      } else {
+        $("#press")?.style.setProperty("--progress", `${t * 100}%`);
+        if (t === 1) {
+          pressing = null;
+          if (world.press(p.id)) {
+            audio.play(0.8, false, true);
+            toast(text("connected"));
+            dirty = true;
+          } else toast(text("notReady"));
+        }
+      }
+    }
+  }
+  if (selected && !world.bricks.includes(selected)) select(null);
+  if (dirty) {
+    renderSelection();
+    dirty = false;
+  }
+  updateSeams();
+  outline.visible = !!selected;
+  if (selected) {
+    outline.setFromObject(selected.mesh);
+    const candidate = turning ? null : world.candidate(selected.id);
+    (outline.material as T.LineBasicMaterial).color.set(
+      candidate ? 0x46866b : 0x8c9591,
+    );
+    $("#alignment").textContent = world.held.has(selected.id)
+      ? turning
+        ? turning.label
+        : pressing
+          ? text("pressing")
+          : candidate
+            ? mobile?.enabled ? mobile.text("ready") : text("ready")
+            : ""
+      : "";
+    $("#alignment").classList.toggle("ready", !!candidate);
+    $("#press")?.toggleAttribute("disabled", !candidate);
+    ghost.visible = !!candidate;
+    if (candidate) {
+      ghost.scale.set(candidate.upper.spec.cols, candidate.upper.spec.rows, 1);
+      ghost.quaternion
+        .copy(candidate.surfaceFit.rotation)
+        .multiply(
+          new T.Quaternion().setFromAxisAngle(
+            new T.Vector3(1, 0, 0),
+            -Math.PI / 2,
+          ),
+        );
+      ghost.position
+        .copy(candidate.surfaceFit.position)
+        .add(
+          new T.Vector3(
+            0,
+            -candidate.upper.spec.height / 2 + 0.02,
+            0,
+          ).applyQuaternion(candidate.surfaceFit.rotation),
+        );
+    }
+  } else {
+    $("#alignment").textContent = "";
+    ghost.visible = false;
+  }
+  controls.update();
+  renderer.render(scene, camera);
+}
 world
   .init()
   .then(() => {
