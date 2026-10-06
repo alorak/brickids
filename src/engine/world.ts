@@ -108,6 +108,49 @@ export class BrickWorld {
     }
     return null;
   }
+  /** Place a newly requested part directly into the scene.
+   * The requested X/Z is aligned to the visible baseplate grid, then the part
+   * is lowered onto the first physical surface and released. Nearby grid cells
+   * are tried when the requested column cannot accept the part.
+   */
+  placeNew(spec: BrickSpec, color: string, target = new T.Vector3()) {
+    if (this.bricks.length >= 250) return null;
+    const socket = connectors(spec, "bottom")[0] ?? { x: 0, z: 0 };
+    const aligned = new T.Vector3(
+      nearestBaseplateStud(target.x + socket.x) - socket.x,
+      0,
+      nearestBaseplateStud(target.z + socket.z) - socket.z,
+    );
+    const brick = this.spawnHeld(
+      spec,
+      color,
+      new T.Vector3(aligned.x, 6, aligned.z),
+    );
+    if (!brick) return null;
+
+    for (let ring = 0; ring <= 10; ring++) {
+      const candidates: T.Vector3[] = [];
+      for (let x = -ring; x <= ring; x++)
+        for (let z = -ring; z <= ring; z++) {
+          if (Math.max(Math.abs(x), Math.abs(z)) !== ring) continue;
+          candidates.push(
+            new T.Vector3(aligned.x + x, 0, aligned.z + z),
+          );
+        }
+      candidates.sort(
+        (a, b) => a.distanceToSquared(aligned) - b.distanceToSquared(aligned),
+      );
+      for (const candidate of candidates) {
+        if (!this.snapDown(brick.id, candidate)) continue;
+        this.drop(brick.id, true);
+        return brick;
+      }
+    }
+
+    this.remove(brick.id);
+    return null;
+  }
+
   add(
     spec: BrickSpec,
     color: string,
