@@ -378,6 +378,13 @@ function renderSelection() {
           <path d="M20 18h8M24 14l4 4-4 4M28 30h-8M24 26l-4 4 4 4"></path>
         </svg>
       </button>
+      <button id="quick-rotate" class="selection-icon-button rotate-icon"
+        aria-label="${text("rotate")}" title="${text("rotate")}">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <path d="M35 16a14 14 0 1 0 2.5 15"></path>
+          <path d="M35 8v9h-9"></path>
+        </svg>
+      </button>
       <button id="quick-delete" class="selection-icon-button delete-icon"
         aria-label="${text("delete")}" title="${text("delete")}">
         <svg viewBox="0 0 48 48" aria-hidden="true">
@@ -401,6 +408,7 @@ function renderSelection() {
     </div>`;
 
   if (lowerLink) $("#quick-detach").onclick = () => separate(lowerLink);
+  $("#quick-rotate").onclick = () => rotate("y");
   $("#quick-delete").onclick = deleteSelected;
 
   $("#grab").onclick = () => {
