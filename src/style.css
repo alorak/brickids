@@ -1676,3 +1676,71 @@ dialog::backdrop {
     height: 38px;
   }
 }
+
+
+/* Physics toggle + denser image-first library. */
+#physics.physics-off {
+  color: #7e8b97;
+  background: #f1f4f7;
+  border-color: #d7dfe7;
+}
+#physics.physics-off:hover {
+  background: #e9eef3;
+}
+
+#library {
+  width: 254px;
+  padding: 14px;
+}
+#swatches {
+  gap: 7px;
+  margin-bottom: 12px;
+}
+.cards-grid {
+  gap: 6px;
+}
+.brick-card {
+  min-height: 92px;
+  border-radius: 10px;
+}
+.cards-grid .part-preview,
+.part-preview {
+  height: 92px;
+  padding: 2px 3px 15px;
+  object-fit: contain;
+}
+.part-card-label {
+  left: 8px;
+  bottom: 6px;
+  font-size: 10px;
+  max-width: calc(100% - 35px);
+}
+.brick-card .add-circle {
+  right: 6px;
+  bottom: 5px;
+  width: 24px;
+  height: 24px;
+  font-size: 17px;
+}
+.more-parts {
+  height: 34px;
+  margin-top: 7px;
+}
+.more-cards {
+  margin-top: 6px;
+}
+
+@media (max-width: 720px) {
+  #library {
+    width: min(244px, calc(100vw - 24px));
+    padding: 12px;
+  }
+  .brick-card {
+    min-height: 86px;
+  }
+  .cards-grid .part-preview,
+  .part-preview {
+    height: 86px;
+    padding: 1px 2px 14px;
+  }
+}
