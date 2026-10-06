@@ -285,6 +285,8 @@ function translate() {
   renderPhysicsButton();
   $("#library-titlebar").setAttribute("aria-label", text("library"));
   $("#scene-menu-toggle").setAttribute("aria-label", text("sceneMenu"));
+  $(".brand").setAttribute("aria-label", `brickids · ${text("save")}`);
+  $(".brand").title = text("save");
   $("#more-parts").setAttribute("aria-label", text("moreParts"));
   setLibraryOpen(panelOpen);
   renderCards();
