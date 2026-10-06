@@ -45,15 +45,14 @@ renderer.toneMapping = T.NeutralToneMapping;
 renderer.toneMappingExposure = 0.9;
 const scene = new T.Scene();
 scene.background = new T.Color("#f3f0e9");
-scene.fog = new T.Fog("#f3f0e9", 35, 95);
-const camera = new T.PerspectiveCamera(36, innerWidth / innerHeight, 0.1, 150);
+const camera = new T.PerspectiveCamera(36, innerWidth / innerHeight, 0.1, 700);
 camera.position.set(14, 15, 19);
 const controls = new OrbitControls(camera, canvas);
 controls.target.set(0, 0.6, 0);
 controls.enableDamping = true;
 controls.maxPolarAngle = Math.PI / 2 - 0.04;
 controls.minDistance = 5;
-controls.maxDistance = 55;
+controls.maxDistance = 110;
 controls.mouseButtons = {
   LEFT: T.MOUSE.ROTATE,
   MIDDLE: T.MOUSE.DOLLY,
@@ -83,14 +82,14 @@ sun.shadow.normalBias = 0.025;
 sun.shadow.radius = 3;
 scene.add(sun);
 const floor = new T.Mesh(
-  new T.PlaneGeometry(200, 200),
+  new T.PlaneGeometry(600, 600),
   new T.MeshStandardMaterial({ color: "#f0ede5", roughness: 0.9 }),
 );
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-// One instanced mesh covers the whole useful camera range with LEGO-like studs.
+// A wider instanced stud field keeps the baseplate continuous across the extended zoom range.
 const baseplate = baseplateStudField();
 scene.add(baseplate);
 const grid = new T.GridHelper(70, 70, 0xd4d0c6, 0xe0dcd3);
