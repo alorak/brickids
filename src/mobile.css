@@ -59,8 +59,6 @@ html.touch-layout #selection.selection {
 }
 .touch-layout #selection > .eyebrow,
 .touch-layout #selection-content { display: none; }
-.touch-layout.library-open #selection,
-.touch-layout[data-control-mode="camera"] #selection { display: none; }
 .touch-layout:has(#selection:not([hidden])) #touch-hint { visibility: hidden; }
 .touch-layout #touch-hud { pointer-events: none; }
 .touch-layout #touch-hud button,
@@ -330,4 +328,177 @@ html.touch-layout #selection.selection {
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
+}
+
+
+/* Final phone layout: no build/camera/zoom toolbar, a compact two-row library,
+   and small selected-brick actions that remain available beside the workspace. */
+@media (max-width: 760px) {
+  .touch-layout {
+    --mobile-library-height: 166px;
+    --hud-bottom: calc(var(--safe-bottom) + var(--mobile-library-height) + 14px);
+  }
+
+  .touch-layout #touch-toolbar {
+    display: none !important;
+  }
+
+  .touch-layout #library {
+    top: auto;
+    left: var(--edge-left);
+    right: var(--edge-right);
+    bottom: calc(var(--safe-bottom) + 8px);
+    width: auto;
+    height: auto;
+    max-height: var(--mobile-library-height);
+    border-radius: 14px;
+  }
+  .touch-layout #library.collapsed {
+    left: var(--edge-left);
+    right: auto;
+    bottom: calc(var(--safe-bottom) + 8px);
+    width: 132px;
+    max-height: 32px;
+  }
+  .touch-layout .library-titlebar {
+    height: 32px;
+    min-height: 32px;
+    grid-template-columns: 20px minmax(0, 1fr) 20px;
+    gap: 6px;
+    padding: 0 8px;
+  }
+  .touch-layout .library-title-icon,
+  .touch-layout .library-title-chevron {
+    width: 18px;
+    height: 18px;
+  }
+  .touch-layout .library-body {
+    padding: 5px 7px 7px;
+    max-height: 134px;
+    overflow: hidden;
+  }
+  .touch-layout #swatches {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 3px;
+    margin: 0 0 4px;
+    padding: 0 0 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    touch-action: pan-x;
+  }
+  .touch-layout #swatches::-webkit-scrollbar {
+    display: none;
+  }
+  .touch-layout .swatch {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    min-height: 22px;
+    border-width: 4px;
+    flex: 0 0 auto;
+  }
+  .touch-layout .library-parts-scroll {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: stretch;
+    gap: 4px;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 0 2px;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    touch-action: pan-x;
+  }
+  .touch-layout .cards-grid {
+    display: grid;
+    grid-template-rows: repeat(2, 44px);
+    grid-auto-flow: column;
+    grid-auto-columns: 56px;
+    width: max-content;
+    flex: 0 0 auto;
+    gap: 4px;
+  }
+  .touch-layout .brick-card {
+    width: 56px;
+    height: 44px;
+    min-height: 44px;
+    border-radius: 8px;
+    touch-action: pan-x;
+  }
+  .touch-layout .cards-grid .part-preview,
+  .touch-layout .part-preview {
+    height: 44px;
+    padding: 0 2px 11px;
+  }
+  .touch-layout .part-card-label {
+    left: 4px;
+    bottom: 2px;
+    max-width: calc(100% - 20px);
+    font-size: 7px;
+  }
+  .touch-layout .brick-card .add-circle {
+    right: 2px;
+    bottom: 2px;
+    width: 16px;
+    height: 16px;
+    font-size: 11px;
+  }
+  .touch-layout .more-parts {
+    flex: 0 0 32px;
+    width: 32px;
+    height: 92px;
+    min-height: 92px;
+    margin: 0;
+    align-self: stretch;
+  }
+  .touch-layout .more-cards {
+    margin: 0;
+  }
+
+  html.touch-layout #selection.selection {
+    display: block;
+  }
+  .touch-layout #selection-content {
+    display: block;
+    position: fixed;
+    top: calc(62px + var(--safe-top));
+    left: var(--edge-left);
+    width: auto;
+    pointer-events: auto;
+    z-index: 6;
+  }
+  .touch-layout #selection-content .selection-minimal {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px;
+    border: 1px solid #c9d9e8cc;
+    border-radius: 10px;
+    background: #f7fbffdd;
+    box-shadow: 0 3px 12px #15334d18;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+  }
+  .touch-layout #selection-content .selected-part-thumb-large {
+    display: none;
+  }
+  .touch-layout #selection-content .selection-icon-button {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    padding: 6px;
+    border-radius: 8px;
+  }
+  .touch-layout #selection-content .selection-icon-button svg {
+    width: 22px;
+    height: 22px;
+  }
+  .touch-layout #selection-content .selection-bridge {
+    display: none !important;
+  }
 }
