@@ -1,133 +1,217 @@
-# Bricks
+# brickids
 
-A small, tactile 3D construction playground. Pick up a brick, line up its studs, press it into place, and build something that behaves as a connected physical object.
+[English](README.md) · [Türkçe](README.tr.md)
 
-Built with TypeScript, Three.js, and Rapier. Runs entirely in the browser and builds to static files for GitHub Pages. No backend, accounts, or API keys.
+**brickids** is a browser-based 3D brick-building playground focused on simple, direct interaction and early-age play. It keeps the underlying construction and physics ideas of the original project, while simplifying the interface for younger builders on desktop, tablet, and mobile devices.
 
-> Upstream provenance: this repository was initialized from `Berkopan/lego-bricks`. Original project and bundled-audio attribution are retained in this README and `public/audio/CREDITS.txt`.
+Live site: https://alorak.github.io/brickids/
 
-## What's in the MVP
+> **Origin / upstream:** this repository is a fork and adaptation of **Berkopan/lego-bricks**. The upstream code was imported in [Berkopan/lego-bricks upstream](https://github.com/alorak/brickids/commit/3a6a0186eb71165b40ae2a1f2a8d4693e8a24b6b "chore: import Berkopan/lego-bricks upstream"). The fork has since been reshaped toward easier free-form building, touch use, simpler controls, and early-age play.
 
-- **13 part types** across bricks, plates, tiles, slopes, round pieces, a corner plate and an arch, with six colors and category filters.
-- A fully 3D scene with orbit controls, shadows, hollow brick shells, studs, and visible underside support tubes.
-- A white baseplate ground option renders a 120 × 120 stud field with instancing, covering the useful camera range without thousands of separate meshes.
-- Dynamic gravity, friction, collision response, tumbling, and continuous collision detection.
-- A collapsible library on the right. New bricks appear held above the work surface.
-- Horizontal movement follows the pointer, while vertical placement is gravity-constrained: held bricks snap to the first physical surface below and return to dynamics on release.
-- Free movement rather than world-grid placement. Connector alignment is checked in the target brick's local coordinates.
-- Explicit press-to-connect: correct positioning alone never creates a joint. Click **Press to connect** or hold **Space**; a short press stroke toward the mating surface ends with recorded LEGO audio.
-- Connected bricks move together. Separating a seam releases connections crossing that interface and preserves connections on either side, including a five-brick stack splitting into groups of three and two.
-- A wide brick can attach to multiple supports in one press.
-- English and Turkish interfaces, remembered locally.
-- JSON save/open, a physics pause button, and an interactive connection example.
+Built with **TypeScript**, **Three.js**, and **Rapier**. The application runs entirely in the browser and is deployed as static files through GitHub Pages. It does not require a backend, account, or API key.
 
-## Parts
+## What changed in this fork
 
-The three original bricks (1×2, 2×2 and 2×4) are joined by these ten additions:
+The current version is intentionally more toy-like and less tool-like than the upstream starting point.
 
-| Family | Added parts |
+- **Simplified interaction for younger builders.** Pick, drag, rotate, separate, and delete without opening dense editing panels.
+- **Desktop, tablet, and mobile layouts.** Touch devices use direct gestures instead of a separate camera/build mode.
+- **Compact mobile library.** Eight color slots stay fixed on the left as a 2-column × 4-row block, while parts remain in a two-row horizontally scrollable strip.
+- **Minimal selected-part actions.** Touch layouts show only **Separate**, **Rotate**, and **Delete**. Desktop uses the same quick-action idea.
+- **Double-tap / double-click separation.** A connected brick can be separated from the brick below without opening an advanced menu.
+- **Keyboard rotate shortcut.** Rotate around Y with **R** or **.**; numpad decimal is supported too.
+- **Optional physics.** Physics starts **off by default** so the scene stays calm and predictable. It can be enabled from the physics button.
+- **Local save shortcut.** Clicking the **brickids** logo performs the same local save action as the Save button.
+- **Clearer part boundaries.** Connected bricks get subtle part-aware seam lines so two touching pieces are easier to distinguish.
+- **Large clear building area.** The fog/haze effect was removed, far zoom was extended, and the visible baseplate was enlarged to **240 × 240 studs**.
+- **Mobile/tablet spacing refinements.** The library no longer reserves space for removed legacy controls.
+- **Quieter feedback.** Connection success toasts were removed; the connection sound remains.
+
+## Building features
+
+### Parts
+
+There are currently **16 simplified part types**:
+
+| Family | Parts |
 | --- | --- |
-| Plates | 1×2, 2×4 |
-| Smooth tiles | 1×2, 2×2 |
+| Bricks | 1×2, 1×4, 2×2, 2×4 |
+| Plates | 1×2, 1×4, 2×2, 2×4 |
+| Tiles | 1×2, 2×2 |
 | Round | 1×1 brick, 1×1 plate |
-| Slopes | 2×2 slope with a studded rear ledge, 1×1 cheese slope |
-| Corner | L-shaped 2×2 plate with three studs |
-| Arch | 1×4 arch with a curved opening |
+| Slopes | 2×2 slope, 1×1 cheese slope |
+| Special | 2×2 corner plate, 1×4 arch |
 
-These are simplified representations of familiar families in [LEGO Pick a Brick](https://www.lego.com/en-us/pick-and-build/pick-a-brick), not a measured ranking of the ten most-used moulds or manufacturing CAD replicas. Plates and tiles use one-third brick height. Smooth tiles and cheese slopes have no upper studs; the larger slope only connects on its rear ledge. The arch attaches underneath at its two feet. Its opening and the missing corner of the L plate are empty in both rendering and collision. Library thumbnails use the actual scene geometry.
+The geometry is designed for an interactive building toy, not as manufacturing CAD.
+
+### Colors
+
+The quick palette contains seven frequently used colors:
+
+- Red
+- Blue
+- Yellow
+- Green
+- Orange
+- Dark Turquoise
+- Black
+
+The eighth slot is **Other**, which opens a searchable snapshot of **214 BrickLink colors**. The selected Other color is remembered locally.
+
+### Placement and connections
+
+- Parts can be clicked into the workspace or dragged out of the library.
+- Dragging settles pieces onto the first physical surface below instead of leaving them floating.
+- Floor-level parts align to the visible baseplate stud grid.
+- Compatible brick-to-brick placement is assisted when a part is released near a valid stud/socket pose.
+- Connected assemblies move together.
+- A wide brick can connect across multiple supports.
+- Connection seams are drawn along real contact regions rather than as generic bounding-box outlines.
+
+## Controls
+
+### Desktop
+
+| Action | Control |
+| --- | --- |
+| Add part | Click a part card, or drag it from the Library |
+| Select | Click a brick |
+| Move | Drag the selected brick |
+| Rotate Y | Quick Rotate button, **R**, or **.** |
+| Tilt | **X / Z** |
+| Raise / lower | **E / Q** |
+| Upright | **U** |
+| Separate | Quick Separate button, or double-click a connected brick / seam |
+| Delete | Quick Delete button, **Delete**, or **Backspace** |
+| Connect | Release near a compatible connection; **Space** also runs the press action when aligned |
+| Orbit camera | Drag empty space |
+| Pan camera | Right-drag |
+| Zoom | Mouse wheel |
+
+### Touch / mobile
+
+- **Tap a brick** to select it.
+- **Drag a brick** to move it.
+- **Drag empty space** to orbit the camera.
+- **Use two fingers** to pan and pinch-zoom.
+- **Double-tap a connected brick** to separate it from the brick below.
+- The compact selection box contains only **Separate**, **Rotate**, and **Delete**.
+- The color block stays at the left of the mobile Library; parts scroll horizontally to its right.
+- Parts can be tapped to add them or pulled from the Library into the workspace.
+
+The old translucent joystick, up/down buttons, Connect button, camera/build switch, and zoom buttons are intentionally not part of the current mobile UI.
+
+## Physics
+
+Rapier powers rigid-body physics, collision detection, friction, and connected assemblies.
+
+Physics is **disabled when the app starts**. This makes the default experience more stable for casual and early-age building. The physics button can enable simulation at any time.
+
+When physics is enabled:
+
+- loose parts can fall and collide,
+- connected groups behave as assemblies,
+- impact sounds can play,
+- fallen loose bricks can recover to an upright baseplate position after settling.
+
+Connections themselves are represented by fixed joints rather than a material-level simulation of real ABS clutch force.
+
+## Saving and persistence
+
+brickids has two kinds of persistence.
+
+### Local scene save
+
+The current scene is stored in the browser under the localStorage key:
+
+`brickids-scene`
+
+You can save it by either:
+
+- clicking **Save** in the scene menu, or
+- clicking the **brickids logo**.
+
+The saved scene is restored on the next launch in the same browser/profile.
+
+### File import / export
+
+The scene menu also supports JSON import and export for moving builds between browsers or keeping external backups.
+
+Language and the selected Other color are also remembered locally.
+
+## Baseplate and camera
+
+The default world uses a white LEGO-like baseplate.
+
+- Visible stud field: **240 × 240 studs**
+- Large underlying floor: **600 × 600 world units**
+- Extended zoom-out range
+- No scene fog, so distant bricks remain clear instead of fading into a white haze
+
+The studs are rendered efficiently with instancing rather than thousands of independent meshes.
 
 ## Run locally
 
-Requires Node.js 22 or later.
+Requires **Node.js 22 or later**.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open the localhost URL printed by Vite. A current browser with WebGL2 and WebAssembly is required. The controls are designed primarily for a desktop mouse and keyboard.
+Open the localhost URL printed by Vite.
+
+Useful commands:
 
 ```sh
-npm test         # connector rules, graph cuts, actual Rapier integration
-npm run build   # TypeScript validation and production build
-npm run preview # serve the production build locally
+npm test
+npm run build
+npm run preview
 ```
 
-## Controls
+A current browser with WebGL2 and WebAssembly support is recommended.
 
-| Action                      | Control                                                                      |
-| --------------------------- | ---------------------------------------------------------------------------- |
-| Add a brick                 | Choose a color and click a library card                                      |
-| Select                      | Click a brick                                                                |
-| Pick up and move            | Drag a brick, or click **Pick up** then drag                                 |
-| Raise / lower               | **E / Q**, or the + / − buttons                                              |
-| Rotate around vertical axis | **R** or Rotate                                                              |
-| Tilt                        | **X / Z**                                                                    |
-| Stand upright               | **U** or Upright; lift first if space is tight                               |
-| Connect                     | Green alignment indicator, then click **Press to connect** or hold **Space** |
-| Cancel a keyboard press     | Release Space before the stroke completes                                    |
-| Release to physics          | **Escape** or Release                                                        |
-| Separate                    | Select a connected brick, then double-click a highlighted seam; or choose a seam and click **Separate**                  |
-| Orbit                       | Drag empty space                                                             |
-| Pan                         | Right-drag                                                                   |
-| Zoom                        | Mouse wheel                                                                  |
+## Project structure
 
-A held object remains in your hand when you stop dragging. This lets you adjust height and rotation before releasing it. Lift above nearby bricks before moving across them. The connection example in the help dialog starts with two aligned bricks so you can try pressing immediately.
+| Module | Responsibility |
+| --- | --- |
+| `src/main.ts` | Scene setup, desktop input, selection UI, save/load integration |
+| `src/mobile.ts` | Touch gesture integration and touch-layout behavior |
+| `src/mobile.css` | Tablet/mobile Library and selection layout |
+| `src/engine/catalog.ts` | Part definitions, quick colors, connector metadata |
+| `src/bricklink-colors.ts` | 214-color BrickLink catalog snapshot |
+| `src/engine/geometry.ts` | Procedural brick geometry |
+| `src/engine/solids.ts` | Shared solid definitions for special parts |
+| `src/engine/connections.ts` | Mating rules and connected-component traversal |
+| `src/engine/seams.ts` | Contact/seam geometry |
+| `src/engine/world.ts` | Rapier bodies, snapping, joints, separation, persistence |
+| `src/engine/audio.ts` | Cached local sound playback |
+| `src/scene/ground.ts` | Baseplate stud field and ground rendering |
+| `src/i18n.ts` | English/Turkish interface strings |
 
-Choose Ivory, Sand, Slate, or Grass from the ground selector in the library. This visual preference is remembered in your browser; changing it keeps your bricks and physics intact. Grass uses a locally generated texture and requires no downloads.
+## Design scope
 
-Audio starts after a user gesture, in accordance with browser autoplay rules. Use the speaker button to mute it. No audio is streamed at runtime.
+brickids is an interactive construction toy, not a precision LEGO CAD system or an engineering simulation.
 
-## Engine structure
+- Dimensions and collision shapes are simplified.
+- Real clutch force, elastic deformation, material stress, and connection breakage are not modeled.
+- The 250-brick creation/import cap remains in place.
+- Performance depends on the device and the complexity of connected assemblies.
+- Touch behavior is intentionally simplified instead of exposing every engine operation.
 
-| Module                      | Responsibility                                                                      |
-| --------------------------- | ----------------------------------------------------------------------------------- |
-| `src/engine/catalog.ts`     | Dimensions, colors, and shared stud/socket lattice                                  |
-| `src/engine/solids.ts` | Shared convex bodies for special geometry, colliders and manual clearance |
-| `src/engine/geometry.ts`    | Procedural hollow shells, studs, and support tubes                                  |
-| `src/engine/connections.ts` | Local-space mating checks and connected-component traversal                         |
-| `src/engine/world.ts`       | Rapier bodies, compound colliders, joints, held assemblies, separation, persistence |
-| `src/engine/audio.ts`       | Cached recording playback and small pitch/gain variation                            |
-| `src/i18n.ts`               | Both interface languages                                                            |
-| `src/main.ts`               | Scene, input, pressure animation, and interface integration                         |
-
-Each brick is a dynamic rigid body with a compound set of wall, roof, and cylindrical stud colliders. Engaged bricks use fixed joints; collisions within an engaged pair are disabled. Simulation advances at a fixed 120 Hz with bounded catch-up. Held connected components temporarily become kinematic and return to dynamic bodies on release.
-
-Mating requires compatible surface normals, a quarter-turn relative orientation (single round studs/sockets allow free yaw), matching stud pitch, a small horizontal tolerance, and a limited approach distance. Alignment previews are permissive only within those tolerances. Pressing checks clearance and creates joints only after the press stroke. Either side can be held: a lower brick can press upward into an existing assembly’s underside, or an upper brick can press downward onto its studs. A connection graph records which bricks actually engage.
-
-Separation uses the selected connection's interface plane. Connections crossing that plane are removed together after checking the extraction path, while internal connections remain intact. The lifted component stays in your hand. An obstructed separation is rejected.
-
-### Add another rectangular brick
-
-Add an entry to `catalog`:
-
-```ts
-{ id: '2x6', cols: 6, rows: 2, height: 1.2, label: '2 × 6' }
-```
-
-The mesh, collider layout, connector lattice, UI card, and save format use that definition. One world unit is one stud pitch; proportions are approximately 8 mm pitch / 9.6 mm body height.
-
-Use `family` for library filtering and `labelTr` for Turkish names. `height: 0.4` defines a plate; `top: "none"` defines a smooth upper surface. `shape` selects the round, slope, corner or arch implementation. `connectors(spec, "top" | "bottom")` describes each surface independently. Add custom shapes in `solids.ts` and their connector masks in `catalog.ts`; the shared convex solids feed geometry and physics, while library previews render the same mesh. Add engagement, clearance, separation and save/restore tests for each new family. Clips, hinges, axles and side-facing connectors still need their own joint/connector implementations.
-
-## Scope and current limitations
-
-This is a construction-oriented rigid-body approximation, not a material simulation of ABS plastic. Gravity and masses are tuned for an interactive tabletop. Stud grip is represented by explicit joints rather than elastic deformation or a calibrated clutch-force model. Connections do not automatically break under load.
-
-Manual movement uses conservative oriented body bounds for rectangular parts, followed by convex-shape checks for special parts so their openings remain usable. These checks do not model every underside recess. Underside tubes are visual geometry; wall, roof, and stud shapes handle collision. Continuous physics still uses the detailed compound colliders. Extremely tight arrangements may require lifting a brick before repositioning it. Orientation buttons turn by 90 degrees; free bodies may tumble at any angle.
-
-Separation currently supports straight extraction along the chosen interface normal, not peeling or twisting. Save files store geometry and connections, not instantaneous velocities. There is a 250-brick creation/import cap, but practical performance depends on device and assembly complexity. Touch layouts are available, but desktop controls are the primary MVP target.
-
-The JavaScript payload contains Three.js and Rapier's WebAssembly runtime (roughly 1 MB compressed). The optional Google Fonts stylesheet falls back to installed sans-serif fonts if unavailable. All geometry and sounds are local assets.
+The project aims to keep building understandable and playful before adding more advanced controls.
 
 ## Sound credits
 
 Real recordings are included under **CC0 1.0**:
 
-- [Lego Click (short) — ImmergoMedia](https://freesound.org/people/ImmergoMedia/sounds/670000/): two LEGO pieces tapped together. Bundled as `public/audio/lego-tap.mp3` from the high-quality preview; used for impacts.
-- [Connecting two LEGO Bricks — LauraWebdev](https://freesound.org/people/LauraWebdev/sounds/257245/): actual connection recordings. Three excerpts from the high-quality preview are bundled as `connect-1.wav`, `connect-2.wav`, and `connect-3.wav`, with peak normalization and short edge fades. Used for engagement and, at a slightly lower playback rate, separation. Separation is an adaptation, not a separate pull-apart recording.
+- [Lego Click (short) — ImmergoMedia](https://freesound.org/people/ImmergoMedia/sounds/670000/) — used for impacts.
+- [Connecting two LEGO Bricks — LauraWebdev](https://freesound.org/people/LauraWebdev/sounds/257245/) — excerpts are used for connection and separation sounds.
 
-[CC0 license](https://creativecommons.org/publicdomain/zero/1.0/). Attribution is retained here for provenance even though CC0 does not require it.
+Additional audio provenance is documented in `public/audio/CREDITS.txt` and [docs/audio-analysis.md](docs/audio-analysis.md).
 
-This is an independent fan-made experiment and is not affiliated with or endorsed by the LEGO Group. LEGO is a trademark of the LEGO Group. No official logos or product photographs are bundled.
+[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 
-Audio signal inspection and playback regression results: [audio verification](docs/audio-analysis.md).
+## Trademark note
+
+This is an independent fan-made experiment and is not affiliated with or endorsed by the LEGO Group. LEGO is a trademark of the LEGO Group. No official LEGO logos or product photographs are bundled.
