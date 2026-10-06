@@ -1,14 +1,48 @@
 import * as T from "three";
 
-export const groundOptions = ["ivory", "sand", "slate", "grass"] as const;
+export const groundOptions = ["baseplate", "ivory", "sand", "slate", "grass"] as const;
 export type GroundStyle = (typeof groundOptions)[number];
 export function groundStyle(value: string | null): GroundStyle {
   return groundOptions.includes(value as GroundStyle)
     ? (value as GroundStyle)
-    : "ivory";
+    : "baseplate";
 }
 
 /** Generated locally once: no external assets, requests, or texture licensing. */
+/** A large instanced stud field makes the ground read like one continuous
+ * LEGO-style baseplate without creating thousands of meshes or colliders.
+ * Physics intentionally remains the existing flat floor; the studs are visual
+ * sockets/studs entering the underside of pieces placed at ground level.
+ */
+export function baseplateStudField(span = 120) {
+  const count = Math.max(2, Math.floor(span));
+  const geometry = new T.CylinderGeometry(0.3, 0.3, 0.18, 20);
+  const material = new T.MeshPhysicalMaterial({
+    color: "#f7f7f4",
+    roughness: 0.34,
+    metalness: 0,
+    clearcoat: 0.28,
+    clearcoatRoughness: 0.42,
+  });
+  const studs = new T.InstancedMesh(geometry, material, count * count);
+  studs.name = "baseplate-studs";
+  studs.castShadow = false;
+  studs.receiveShadow = true;
+
+  const dummy = new T.Object3D();
+  const offset = (count - 1) / 2;
+  let instance = 0;
+  for (let x = 0; x < count; x++)
+    for (let z = 0; z < count; z++) {
+      dummy.position.set(x - offset, 0.09, z - offset);
+      dummy.updateMatrix();
+      studs.setMatrixAt(instance++, dummy.matrix);
+    }
+  studs.instanceMatrix.needsUpdate = true;
+  studs.computeBoundingSphere();
+  return studs;
+}
+
 function grassTexture(anisotropy: number) {
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = 512;
@@ -45,10 +79,12 @@ function grassTexture(anisotropy: number) {
 export function groundController(
   material: T.MeshStandardMaterial,
   grid: T.GridHelper,
+  baseplate: T.InstancedMesh,
   anisotropy: number,
 ) {
   let grass: T.CanvasTexture | undefined;
   const colors = {
+    baseplate: "#f7f7f4",
     ivory: "#f0ede5",
     sand: "#c9a875",
     slate: "#697984",
@@ -60,8 +96,10 @@ export function groundController(
     material.map = style === "grass" ? grass! : null;
     material.bumpMap = material.map;
     material.bumpScale = style === "grass" ? 0.035 : 0;
-    material.roughness = style === "grass" ? 1 : 0.9;
+    material.roughness =
+      style === "grass" ? 1 : style === "baseplate" ? 0.55 : 0.9;
     material.needsUpdate = true;
-    grid.visible = style !== "grass";
+    baseplate.visible = style === "baseplate";
+    grid.visible = style !== "grass" && style !== "baseplate";
   };
 }
