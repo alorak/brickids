@@ -553,6 +553,9 @@ const deleteDialogEl = $<HTMLDialogElement>("#delete-dialog");
 deleteDialogEl.addEventListener("click", (event) => {
   if (event.target === deleteDialogEl) cancelDeleteSelected();
 });
+deleteDialogEl.addEventListener("close", () => {
+  pendingDeleteId = null;
+});
 $("#delete-confirm").onclick = confirmDeleteSelected;
 $("#delete-cancel").onclick = cancelDeleteSelected;
 const helpDialog = $<HTMLDialogElement>("#help-dialog");
