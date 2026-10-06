@@ -271,10 +271,6 @@ function translate() {
   dirty = true;
 }
 const previewPart = partPreviews();
-const brickDragImage = document.createElement("img");
-brickDragImage.className = "brick-drag-image";
-brickDragImage.alt = "";
-document.body.append(brickDragImage);
 const corePartIds = ["1x2", "1x4", "2x2", "2x4", "round-1x1", "slope-2x2"] as const;
 let morePartsOpen = false;
 let libraryDragging = false;
@@ -316,10 +312,12 @@ function renderCards() {
       event.dataTransfer.setData("application/x-brickids-part", payload);
       event.dataTransfer.setData("text/plain", payload);
       const preview = el.querySelector<HTMLImageElement>(".part-preview");
-      if (preview) {
-        brickDragImage.src = preview.src;
-        event.dataTransfer.setDragImage(brickDragImage, 75, 48);
-      }
+      if (preview)
+        event.dataTransfer.setDragImage(
+          preview,
+          preview.clientWidth / 2,
+          preview.clientHeight / 2,
+        );
       libraryDragging = true;
       el.classList.add("dragging");
     };
