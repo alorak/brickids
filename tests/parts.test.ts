@@ -26,7 +26,15 @@ test("primary palette matches the requested BrickLink / LEGO mapping", () => {
       ["White", "White", 1, 1, "#FFFFFF"],
     ],
   );
-  for (const id of ["1x2", "1x4", "2x2", "2x4"]) assert.ok(spec(id), id);
+  for (const id of [
+    "1x2",
+    "1x4",
+    "2x2",
+    "2x4",
+    "round-1x1",
+    "slope-2x2",
+  ])
+    assert.ok(spec(id), id);
 });
 
 test("catalog parts have working bottom sockets, exact engagement and scene round trips", async () => {

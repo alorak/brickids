@@ -20,7 +20,7 @@ let language: Language =
   localStorage.getItem("bricks-language") === "tr" ? "tr" : "en";
 const SAVED_SCENE_KEY = "brickids-scene";
 const app = document.querySelector<HTMLDivElement>("#app")!;
-app.innerHTML = `<canvas id="world" aria-label="3D brick workspace"></canvas><header><a class="brand" href="./" aria-label="brickids"><span class="brand-main">brick</span><span class="brand-accent">ids</span></a><div class="top-actions"><button id="help" class="icon-button">?</button><button id="sound" class="icon-button" aria-pressed="true"></button><button id="library-toggle" class="header-tool" aria-controls="library" aria-expanded="false"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="7" width="10" height="8" rx="2"></rect><rect x="18" y="7" width="10" height="8" rx="2"></rect><rect x="4" y="18" width="10" height="8" rx="2"></rect><rect x="18" y="18" width="10" height="8" rx="2"></rect></svg></button><button id="scene-menu-toggle" class="header-tool" aria-haspopup="dialog"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 9h9l2 3h11v14H5z"></path><path d="M9 17h14M9 21h10"></path></svg></button></div></header><aside id="library"><div id="swatches"></div><div id="core-cards" class="cards-grid"></div><button id="more-parts" class="more-parts" aria-expanded="false" aria-controls="more-cards"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button><div id="more-cards" class="cards-grid more-cards" hidden></div></aside><section id="selection" class="selection" hidden><div id="selection-content"></div></section><div class="bottom-center"><div id="alignment" role="status"></div></div><div id="toast" role="status"></div><dialog id="scene-dialog" class="scene-dialog"><button id="close-scene-menu" class="close">×</button><div class="scene-menu-grid"><button id="scene-save" class="scene-menu-action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 5h16l4 4v18H7z"></path><path d="M11 5v8h11V5M11 21h12"></path></svg><span data-t="save"></span></button><button id="scene-import" class="scene-menu-action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 9h9l2 3h9v14H6z"></path><path d="M16 22V14M12 18l4-4 4 4"></path></svg><span data-t="importScene"></span></button><button id="scene-export" class="scene-menu-action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 9h9l2 3h9v14H6z"></path><path d="M16 14v8M12 18l4 4 4-4"></path></svg><span data-t="exportScene"></span></button><button id="scene-new" class="scene-menu-action danger"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 8h16v16H8z"></path><path d="M12 16h8M16 12v8"></path></svg><span data-t="newScene"></span></button></div><div class="scene-language"><button data-lang="en">EN</button><button data-lang="tr">TR</button></div></dialog><dialog id="help-dialog"><button id="close-help" class="close">×</button><div class="eyebrow" data-t="shortcuts"></div><h2 data-t="help"></h2><button id="demo" class="text-button" data-t="demo"></button><p data-t="helpText"></p><div class="key-row"><kbd>Q</kbd><kbd>E</kbd><span data-t="lift"></span></div><div class="key-row"><kbd>R</kbd><span data-t="axisY"></span></div><div class="key-row"><kbd>X</kbd><kbd>Z</kbd><span data-t="tiltAxes"></span></div><div class="key-row"><kbd data-t="doubleClick"></kbd><span data-t="seamHelp"></span></div><div class="key-row"><kbd>Delete</kbd><kbd>Backspace</kbd><span data-t="delete"></span></div><div class="key-row"><kbd>Space</kbd><span data-t="press"></span></div></dialog><input type="file" id="file" accept=".json" hidden><div id="loading" data-t="loading"></div>`;
+app.innerHTML = `<canvas id="world" aria-label="3D brick workspace"></canvas><header><a class="brand" href="./" aria-label="brickids"><span class="brand-main">brick</span><span class="brand-accent">ids</span></a><div class="top-actions"><button id="sound" class="icon-button" aria-pressed="true"></button><button id="library-toggle" class="header-tool" aria-controls="library" aria-expanded="false"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="7" width="10" height="8" rx="2"></rect><rect x="18" y="7" width="10" height="8" rx="2"></rect><rect x="4" y="18" width="10" height="8" rx="2"></rect><rect x="18" y="18" width="10" height="8" rx="2"></rect></svg></button><button id="scene-menu-toggle" class="header-tool" aria-haspopup="dialog"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 9h9l2 3h11v14H5z"></path><path d="M9 17h14M9 21h10"></path></svg></button></div></header><aside id="library"><div id="swatches"></div><div id="core-cards" class="cards-grid"></div><button id="more-parts" class="more-parts" aria-expanded="false" aria-controls="more-cards"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button><div id="more-cards" class="cards-grid more-cards" hidden></div></aside><section id="selection" class="selection" hidden><div id="selection-content"></div></section><div class="bottom-center"><div id="alignment" role="status"></div></div><div id="toast" role="status"></div><dialog id="scene-dialog" class="scene-dialog"><button id="close-scene-menu" class="close">×</button><div class="scene-menu-grid"><button id="scene-save" class="scene-menu-action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 5h16l4 4v18H7z"></path><path d="M11 5v8h11V5M11 21h12"></path></svg><span data-t="save"></span></button><button id="scene-import" class="scene-menu-action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 9h9l2 3h9v14H6z"></path><path d="M16 22V14M12 18l4-4 4 4"></path></svg><span data-t="importScene"></span></button><button id="scene-export" class="scene-menu-action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 9h9l2 3h9v14H6z"></path><path d="M16 14v8M12 18l4 4 4-4"></path></svg><span data-t="exportScene"></span></button><button id="scene-new" class="scene-menu-action danger"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 8h16v16H8z"></path><path d="M12 16h8M16 12v8"></path></svg><span data-t="newScene"></span></button></div><div class="scene-language"><button data-lang="en">EN</button><button data-lang="tr">TR</button></div></dialog><dialog id="delete-dialog" class="delete-dialog"><div class="delete-prompt">DELETE?</div><div class="delete-confirm-actions"><button id="delete-confirm" class="delete-confirm-yes" aria-label="Confirm delete"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="m7 17 6 6L26 9"></path></svg></button><button id="delete-cancel" class="delete-confirm-no" aria-label="Cancel delete"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 9l14 14M23 9 9 23"></path></svg></button></div></dialog><dialog id="help-dialog"><button id="close-help" class="close">×</button><div class="eyebrow" data-t="shortcuts"></div><h2 data-t="help"></h2><button id="demo" class="text-button" data-t="demo"></button><p data-t="helpText"></p><div class="key-row"><kbd>Q</kbd><kbd>E</kbd><span data-t="lift"></span></div><div class="key-row"><kbd>R</kbd><span data-t="axisY"></span></div><div class="key-row"><kbd>X</kbd><kbd>Z</kbd><span data-t="tiltAxes"></span></div><div class="key-row"><kbd data-t="doubleClick"></kbd><span data-t="seamHelp"></span></div><div class="key-row"><kbd>Delete</kbd><kbd>Backspace</kbd><span data-t="delete"></span></div><div class="key-row"><kbd>Space</kbd><span data-t="press"></span></div></dialog><input type="file" id="file" accept=".json" hidden><div id="loading" data-t="loading"></div>`;
 const $ = <E extends HTMLElement = HTMLElement>(s: string) =>
   document.querySelector<E>(s)!;
 const text = (key: keyof typeof messages.en) => messages[language][key];
@@ -253,8 +253,6 @@ function translate() {
     .forEach((el) =>
       el.classList.toggle("active", el.dataset.lang === language),
     );
-  $("#help").title = text("help");
-  $("#help").setAttribute("aria-label", text("help"));
   $("#close-help").setAttribute("aria-label", language === "tr" ? "Yardımı kapat" : "Close help");
   $("#close-scene-menu").setAttribute("aria-label", language === "tr" ? "Menüyü kapat" : "Close menu");
   renderSoundButton();
@@ -267,11 +265,17 @@ function translate() {
   dirty = true;
 }
 const previewPart = partPreviews();
-const corePartIds = ["1x2", "1x4", "2x2", "2x4"] as const;
+const corePartIds = ["1x2", "1x4", "2x2", "2x4", "round-1x1", "slope-2x2"] as const;
 let morePartsOpen = false;
 let libraryDragging = false;
 function partCard(s: (typeof catalog)[number]) {
-  return `<button class="brick-card" draggable="true" data-spec="${s.id}" aria-label="${text("add")} ${partLabel(s, language)}"><img class="part-preview" src="${previewPart(s, currentColor)}" alt="" draggable="false"><div class="card-description"><strong>${partLabel(s, language)}</strong><span class="add-circle">+</span></div></button>`;
+  const compact =
+    s.id === "round-1x1"
+      ? "1 × 1 Round"
+      : s.id === "slope-2x2"
+        ? "2 × 2 Slope"
+        : partLabel(s, language);
+  return `<button class="brick-card" draggable="true" data-spec="${s.id}" aria-label="${text("add")} ${partLabel(s, language)}"><img class="part-preview" src="${previewPart(s, currentColor)}" alt="" draggable="false"><span class="part-card-label">${compact}</span><span class="add-circle" aria-hidden="true">+</span></button>`;
 }
 function renderCards() {
   const core = corePartIds
@@ -402,14 +406,26 @@ function separate(link: Connection) {
   dirty = true;
   updateSeams();
 }
+let pendingDeleteId: number | null = null;
 function deleteSelected() {
-  if (!selected || !confirm(text("deleteConfirm"))) return;
+  if (!selected) return;
+  pendingDeleteId = selected.id;
+  $<HTMLDialogElement>("#delete-dialog").showModal();
+}
+function confirmDeleteSelected() {
+  const id = pendingDeleteId;
+  pendingDeleteId = null;
+  $<HTMLDialogElement>("#delete-dialog").close();
+  if (id === null || !world.bricks.some((brick) => brick.id === id)) return;
   cancelPress();
   endDrag();
-  const id = selected.id;
-  select(null);
+  if (selected?.id === id) select(null);
   world.remove(id);
   toast(text("deleted"));
+}
+function cancelDeleteSelected() {
+  pendingDeleteId = null;
+  $<HTMLDialogElement>("#delete-dialog").close();
 }
 function height(amount: number) {
   translateSelected(new T.Vector3(0, amount, 0));
@@ -533,10 +549,15 @@ sceneDialog.addEventListener("click", (event) =>
   closeDialogFromBackdrop(sceneDialog, event),
 );
 $("#close-scene-menu").onclick = () => sceneDialog.close();
-$("#help").onclick = () => {
-  cancelInteraction();
-  $<HTMLDialogElement>("#help-dialog").showModal();
-};
+const deleteDialogEl = $<HTMLDialogElement>("#delete-dialog");
+deleteDialogEl.addEventListener("click", (event) =>
+  closeDialogFromBackdrop(deleteDialogEl, event),
+);
+deleteDialogEl.addEventListener("close", () => {
+  pendingDeleteId = null;
+});
+$("#delete-confirm").onclick = confirmDeleteSelected;
+$("#delete-cancel").onclick = cancelDeleteSelected;
 const helpDialog = $<HTMLDialogElement>("#help-dialog");
 helpDialog.addEventListener("click", (event) =>
   closeDialogFromBackdrop(helpDialog, event),
@@ -874,7 +895,9 @@ window.addEventListener("keydown", (e) => {
     ["INPUT", "SELECT", "TEXTAREA"].includes(
       (e.target as HTMLElement).tagName,
     ) ||
-    $<HTMLDialogElement>("#help-dialog").open
+    $<HTMLDialogElement>("#help-dialog").open ||
+    $<HTMLDialogElement>("#scene-dialog").open ||
+    $<HTMLDialogElement>("#delete-dialog").open
   )
     return;
   if (e.code === "Space") {
