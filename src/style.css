@@ -1209,3 +1209,16 @@ dialog p {
     bottom: 18px;
   }
 }
+
+
+/* Library drag-and-drop affordance. */
+.brick-card[draggable="true"] {
+  cursor: grab;
+}
+.brick-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+.brick-card.dragging {
+  opacity: 0.42;
+  transform: scale(0.98);
+}
