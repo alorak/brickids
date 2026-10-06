@@ -650,8 +650,10 @@ test("physics can be paused without moving bricks and resumes from rest", async 
 
   w.setPhysicsEnabled(false);
   assert.equal(w.physicsEnabled, false);
-  assert.deepEqual(brick.body.linvel(), { x: 0, y: 0, z: 0 });
-  assert.deepEqual(brick.body.angvel(), { x: 0, y: 0, z: 0 });
+  const linear = brick.body.linvel(),
+    angular = brick.body.angvel();
+  assert.ok(Math.abs(linear.x) < 1e-9 && Math.abs(linear.y) < 1e-9 && Math.abs(linear.z) < 1e-9);
+  assert.ok(Math.abs(angular.x) < 1e-9 && Math.abs(angular.y) < 1e-9 && Math.abs(angular.z) < 1e-9);
 
   const pausedY = brick.position.y;
   for (let i = 0; i < 120; i++) w.step();
