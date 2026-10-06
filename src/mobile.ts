@@ -5,13 +5,13 @@ import { bindTouchGestures, type TouchActions } from "./input/touch";
 
 const labels = {
   en: {
-    ready: "Aligned · tap Connect",
-    demoHint: "The red brick is ready. Tap Connect.",
+    ready: "Aligned",
+    demoHint: "The red brick is aligned.",
     help: "Tap a brick to select it. Drag a brick directly to move it, drag empty space to orbit, use two fingers to pan and pinch to zoom. The small selected-brick box provides Separate, Rotate and Delete. Double-tap a brick to separate it from the brick directly below. In the compact library, colors stay at the left and parts scroll sideways on the right.",
   },
   tr: {
-    ready: "Hizalandı · Birleştir'e dokun",
-    demoHint: "Kırmızı parça hazır. Birleştir'e dokun.",
+    ready: "Hizalandı",
+    demoHint: "Kırmızı parça hizalandı.",
     help: "Seçmek için parçaya dokun. Parçayı doğrudan sürükleyerek taşı, boş alanda sürükleyerek kamerayı döndür; iki parmakla kaydır ve yakınlaştır. Küçük seçili-parça kutusunda Ayır, Döndür ve Sil bulunur. Bir parçaya çift dokununca altındaki parçadan ayrılır. Kompakt Library'de renkler solda sabit kalır, parçalar sağda yana kaydırılır.",
   },
 };
