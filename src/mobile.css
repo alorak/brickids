@@ -300,3 +300,34 @@ html.touch-layout #selection.selection {
     max-height: calc(100dvh - var(--safe-top) - 178px);
   }
 }
+
+
+/* Keep touch header controls equal-sized and keep color swatches pinned. */
+.touch-layout .icon-button,
+.touch-layout .header-tool {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}
+.touch-layout .icon-button svg,
+.touch-layout .header-tool svg {
+  width: 23px;
+  height: 23px;
+}
+.touch-layout .library-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.touch-layout #swatches {
+  flex: 0 0 auto;
+}
+.touch-layout .library-parts-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
