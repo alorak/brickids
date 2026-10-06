@@ -641,9 +641,21 @@ dialog p {
 }
 .close {
   position: absolute;
-  right: 16px;
+  right: 12px;
   top: 10px;
-  font-size: 26px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  font-size: 32px;
+  line-height: 1;
+  color: #56645a;
+}
+.close:hover {
+  background: #e8ece5;
 }
 .key-row {
   display: flex;

@@ -116,16 +116,18 @@ export const catalog: BrickSpec[] = [
   },
   { id: "1x4", cols: 4, rows: 1, height: 1.2, label: "1 × 4" },
 ];
-/** Solid LEGO/LDraw colours from the current official LDConfig palette. */
+/** BrickLink-oriented display palette used by the UI and brick materials.
+ * IDs are kept beside the colour so the mapping is explicit and testable.
+ */
 export const colorPalette = [
-  { name: "Blue", hex: "#1E5AA8" },
-  { name: "Medium Azure", hex: "#68C3E2" },
-  { name: "Bright Green", hex: "#58AB41" },
-  { name: "Yellow", hex: "#FAC80A" },
-  { name: "Orange", hex: "#D67923" },
-  { name: "Red", hex: "#B40000" },
-  { name: "Black", hex: "#1B2A34" },
-  { name: "White", hex: "#F4F4F4" },
+  { name: "Red", legoName: "Bright Red", legoId: 21, bricklinkId: 5, hex: "#C91A09" },
+  { name: "Blue", legoName: "Bright Blue", legoId: 23, bricklinkId: 7, hex: "#0055BF" },
+  { name: "Yellow", legoName: "Bright Yellow", legoId: 24, bricklinkId: 3, hex: "#F2CD37" },
+  { name: "Green", legoName: "Dark Green", legoId: 28, bricklinkId: 6, hex: "#237841" },
+  { name: "Orange", legoName: "Bright Orange", legoId: 106, bricklinkId: 4, hex: "#FE8A18" },
+  { name: "Dark Turquoise", legoName: "Bright Bluish Green", legoId: 107, bricklinkId: 39, hex: "#008F9B" },
+  { name: "Black", legoName: "Black", legoId: 26, bricklinkId: 11, hex: "#05131D" },
+  { name: "White", legoName: "White", legoId: 1, bricklinkId: 1, hex: "#FFFFFF" },
 ] as const;
 export const colors: string[] = colorPalette.map((c) => c.hex);
 export function partLabel(s: BrickSpec, language: string) {

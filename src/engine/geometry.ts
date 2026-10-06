@@ -6,10 +6,10 @@ export function brickMesh(s: BrickSpec, color: string) {
   const group = new T.Group();
   const material = new T.MeshPhysicalMaterial({
     color,
-    roughness: 0.27,
+    roughness: 0.34,
     metalness: 0,
-    clearcoat: 0.45,
-    clearcoatRoughness: 0.3,
+    clearcoat: 0.22,
+    clearcoatRoughness: 0.42,
   });
   const add = (g: T.BufferGeometry, x: number, y: number, z: number) => {
     const m = new T.Mesh(g, material);

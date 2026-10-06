@@ -6,18 +6,24 @@ import { mating } from "../src/engine/connections";
 import { BrickWorld } from "../src/engine/world";
 const spec = (id: string) => catalog.find((s) => s.id === id)!;
 
-test("primary palette matches the official solid LEGO/LDraw values", () => {
+test("primary palette matches the requested BrickLink / LEGO mapping", () => {
   assert.deepEqual(
-    colorPalette.map(({ name, hex }) => [name, hex]),
+    colorPalette.map(({ name, legoName, legoId, bricklinkId, hex }) => [
+      name,
+      legoName,
+      legoId,
+      bricklinkId,
+      hex,
+    ]),
     [
-      ["Blue", "#1E5AA8"],
-      ["Medium Azure", "#68C3E2"],
-      ["Bright Green", "#58AB41"],
-      ["Yellow", "#FAC80A"],
-      ["Orange", "#D67923"],
-      ["Red", "#B40000"],
-      ["Black", "#1B2A34"],
-      ["White", "#F4F4F4"],
+      ["Red", "Bright Red", 21, 5, "#C91A09"],
+      ["Blue", "Bright Blue", 23, 7, "#0055BF"],
+      ["Yellow", "Bright Yellow", 24, 3, "#F2CD37"],
+      ["Green", "Dark Green", 28, 6, "#237841"],
+      ["Orange", "Bright Orange", 106, 4, "#FE8A18"],
+      ["Dark Turquoise", "Bright Bluish Green", 107, 39, "#008F9B"],
+      ["Black", "Black", 26, 11, "#05131D"],
+      ["White", "White", 1, 1, "#FFFFFF"],
     ],
   );
   for (const id of ["1x2", "1x4", "2x2", "2x4"]) assert.ok(spec(id), id);
