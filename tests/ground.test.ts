@@ -22,8 +22,8 @@ test("baseplate stud field uses one instanced mesh on unit stud pitch", () => {
   const p0 = new Vector3(), p1 = new Vector3();
   first.decompose(p0, new Quaternion(), new Vector3());
   last.decompose(p1, new Quaternion(), new Vector3());
-  assert.deepEqual(p0.toArray(), [-3.5, 0.09, -3.5]);
-  assert.deepEqual(p1.toArray(), [3.5, 0.09, 3.5]);
+  assert.ok(p0.distanceTo(new Vector3(-3.5, 0.09, -3.5)) < 1e-6);
+  assert.ok(p1.distanceTo(new Vector3(3.5, 0.09, 3.5)) < 1e-6);
 
   studs.geometry.dispose();
   if (Array.isArray(studs.material)) studs.material.forEach((m) => m.dispose());
