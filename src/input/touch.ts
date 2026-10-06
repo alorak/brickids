@@ -15,6 +15,7 @@ export interface TouchActions {
   end(): void;
   orbit(dx: number, dy: number): void;
   panZoom(before: TouchPair, after: TouchPair): void;
+  doubleTap?(point: TouchPoint): void;
 }
 const TAP_SLOP = 9;
 function pair(points: TouchPoint[]): TouchPair {
@@ -30,6 +31,7 @@ export class TouchGestures {
   private kind: "idle" | "piece" | "orbit" | "multi" = "idle";
   private origin: TouchPoint | null = null;
   private moved = false;
+  private lastTap: (TouchPoint & { at: number }) | null = null;
   private actions: TouchActions;
   constructor(actions: TouchActions) {
     this.actions = actions;
@@ -44,9 +46,11 @@ export class TouchGestures {
       this.origin = { ...point };
       this.moved = false;
       this.kind = !cameraMode && this.actions.start(point) ? "piece" : "orbit";
+      if (this.kind !== "piece") this.lastTap = null;
     } else {
       // A second finger ends editing, but never releases/drops the held assembly.
       if (this.kind === "piece") this.actions.end();
+      this.lastTap = null;
       this.kind = "multi";
     }
   }
@@ -66,13 +70,30 @@ export class TouchGestures {
     if (!this.moved) {
       this.moved = Math.hypot(point.clientX - this.origin.clientX, point.clientY - this.origin.clientY) > TAP_SLOP;
       if (!this.moved) return;
+      this.lastTap = null;
     }
     if (this.kind === "piece") this.actions.move(point);
     else if (this.kind === "orbit")
       this.actions.orbit(point.clientX - previous.clientX, point.clientY - previous.clientY);
   }
   up(pointerId: number) {
-    if (!this.points.delete(pointerId)) return;
+    const point = this.points.get(pointerId);
+    if (!point || !this.points.delete(pointerId)) return;
+    const tappedPiece = this.points.size === 0 && this.kind === "piece" && !this.moved;
+    if (tappedPiece && this.actions.doubleTap) {
+      const now = Date.now();
+      const previous = this.lastTap;
+      if (
+        previous &&
+        now - previous.at <= 320 &&
+        Math.hypot(point.clientX - previous.clientX, point.clientY - previous.clientY) <= 24
+      ) {
+        this.lastTap = null;
+        this.actions.doubleTap({ ...point });
+      } else {
+        this.lastTap = { ...point, at: now };
+      }
+    }
     if (this.points.size === 0) this.cancel();
   }
   cancel() {
