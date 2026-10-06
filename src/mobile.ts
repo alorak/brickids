@@ -6,18 +6,14 @@ import { setupMobileHud } from "./mobile-hud";
 
 const labels = {
   en: {
-    build: "Build", camera: "Camera", zoomIn: "Zoom in", zoomOut: "Zoom out", controls: "Touch controls",
-    buildHint: "Drag a brick or use the stick · two fingers to pan / zoom",
-    cameraHint: "Drag anywhere to orbit · two fingers to pan / zoom",
-    ready: "Aligned · tap Connect", demoHint: "The red brick is ready. Tap Connect.",
-    help: "In Build mode, tap a brick to select it. The transparent joystick at the bottom left moves it relative to your view; push gently for fine positioning. Release the stick to stop. The small buttons at the bottom right lift, lower, rotate and connect the brick. Tap … for X / Z tilt, upright, pick up / release, directional nudges, separate and delete. Extra tools stay closed until you ask for them. You can still drag bricks directly. Drag empty space to orbit, or switch to Camera to orbit over bricks. Move two fingers together to pan, and pinch to zoom. Save, import, export and new-scene actions are available from the folder button at the top right.",
+    ready: "Aligned · tap Connect",
+    demoHint: "The red brick is ready. Tap Connect.",
+    help: "Tap a brick to select it. Drag a brick directly to move it, drag empty space to orbit, use two fingers to pan and pinch to zoom. The small controls around the workspace move, rotate and connect the selected brick. Double-tap a brick to separate it from the brick directly below. The compact library stays available at the bottom: swipe it sideways to browse, tap a part to add it, or pull a part upward into the workspace.",
   },
   tr: {
-    build: "Parça", camera: "Kamera", zoomIn: "Yakınlaştır", zoomOut: "Uzaklaştır", controls: "Dokunmatik kontroller",
-    buildHint: "Parçayı sürükle veya joystick'i kullan · iki parmakla kaydır / yakınlaştır",
-    cameraHint: "Her yerde sürükleyerek dön · iki parmakla kaydır / yakınlaştır",
-    ready: "Hizalandı · Birleştir'e dokun", demoHint: "Kırmızı parça hazır. Birleştir'e dokun.",
-    help: "Parça modunda seçmek için parçaya dokun. Sol alttaki saydam joystick parçayı kameraya göre taşır; hassas konumlandırmak için hafifçe it. Parmağını kaldırınca hareket durur. Sağ alttaki küçük düğmelerle yükselt, alçalt, döndür ve birleştir. X / Z eğme, dik tutma, eline alma / bırakma, yön düğmeleri, ayırma ve silme için … düğmesine dokun. Ek araçlar kendiliğinden açılmaz. Parçaları doğrudan sürüklemeye de devam edebilirsin. Boş alanda sürükleyerek kamerayı döndür; parçaların üzerinde de dönmek için Kamera moduna geç. İki parmakla kaydır ve parmaklarını açıp kapatarak yakınlaştır. Kaydetme ve dosya açma alt çubuktadır.",
+    ready: "Hizalandı · Birleştir'e dokun",
+    demoHint: "Kırmızı parça hazır. Birleştir'e dokun.",
+    help: "Seçmek için parçaya dokun. Parçayı doğrudan sürükleyerek taşı, boş alanda sürükleyerek kamerayı döndür; iki parmakla kaydır ve yakınlaştır. Çalışma alanındaki küçük kontroller seçili parçayı taşır, döndürür ve birleştirir. Bir parçaya çift dokununca altındaki parçadan ayrılır. Alttaki kompakt Library açık kalır: yana kaydırarak parçalara göz at, dokunarak ekle veya parçayı yukarı doğru çalışma alanına sürükle.",
   },
 };
 type Label = keyof typeof labels.en;
@@ -26,7 +22,7 @@ interface MobileOptions {
   camera: T.PerspectiveCamera;
   controls: OrbitControls;
   language(): Language;
-  drag: Pick<TouchActions, "start" | "move" | "end">;
+  drag: Pick<TouchActions, "start" | "move" | "end" | "doubleTap">;
   cancel(): void;
   rotate(axis: "x" | "y" | "z"): void;
   translateBrick(delta: T.Vector3): void;
@@ -35,15 +31,9 @@ interface MobileOptions {
 export function setupMobile(options: MobileOptions) {
   const { canvas, camera, controls } = options;
   const root = document.documentElement;
-  // Viewport width changes placement only; it never enables mobile controls on desktop.
+  // Coarse-primary-pointer devices opt in to touch gestures; desktop stays unchanged.
   const compact = matchMedia("(pointer: coarse)");
-  let cameraMode = false;
   const text = (key: Label) => labels[options.language()][key];
-  const toolbar = document.createElement("nav");
-  toolbar.id = "touch-toolbar";
-  toolbar.className = "touch-only";
-  toolbar.innerHTML = `<div class="touch-modes"><button data-mode="build" aria-pressed="true" data-touch-t="build"></button><button data-mode="camera" aria-pressed="false" data-touch-t="camera"></button></div><div class="touch-zoom"><button data-zoom="in">+</button><button data-zoom="out">−</button></div><p id="touch-hint"></p>`;
-  document.querySelector("header")!.after(toolbar);
   const help = document.createElement("p");
   help.className = "touch-help touch-only";
   help.dataset.touchT = "help";
@@ -74,7 +64,7 @@ export function setupMobile(options: MobileOptions) {
       controls.target.add(pan);
       zoom(before.distance / after.distance);
     },
-  }, () => cameraMode);
+  }, () => false);
 
   const hud = setupMobileHud({
     language: options.language,
@@ -86,31 +76,11 @@ export function setupMobile(options: MobileOptions) {
       options.translateBrick(right.multiplyScalar(x).addScaledVector(forward, -y));
     },
   });
-  toolbar.querySelectorAll<HTMLButtonElement>("[data-mode]").forEach(button => {
-    button.onclick = () => {
-      touch.cancel();
-      hud.cancel();
-      hud.collapse();
-      options.cancel();
-      cameraMode = button.dataset.mode === "camera";
-      translate();
-    };
-  });
-  toolbar.querySelectorAll<HTMLButtonElement>("[data-zoom]").forEach(button => {
-    button.onclick = () => zoom(button.dataset.zoom === "in" ? 0.85 : 1 / 0.85);
-  });
   function translate() {
     document.querySelectorAll<HTMLElement>("[data-touch-t]").forEach(el => {
       el.textContent = text(el.dataset.touchT as Label);
     });
-    toolbar.setAttribute("aria-label", text("controls"));
-    toolbar.querySelector("#touch-hint")!.textContent = text(cameraMode ? "cameraHint" : "buildHint");
-    toolbar.querySelectorAll<HTMLElement>("[data-mode]").forEach(el => {
-      el.setAttribute("aria-pressed", String((el.dataset.mode === "camera") === cameraMode));
-    });
-    toolbar.querySelector("[data-zoom=in]")!.setAttribute("aria-label", text("zoomIn"));
-    toolbar.querySelector("[data-zoom=out]")!.setAttribute("aria-label", text("zoomOut"));
-    root.dataset.controlMode = cameraMode ? "camera" : "build";
+    root.dataset.controlMode = "touch";
     hud.translate();
   }
   function layout() {
@@ -118,15 +88,13 @@ export function setupMobile(options: MobileOptions) {
     hud.cancel();
     hud.collapse();
     root.classList.toggle("touch-layout", compact.matches);
-    if (compact.matches) options.setLibraryOpen(false);
-    else cameraMode = false;
     translate();
   }
   compact.addEventListener("change", layout);
   layout();
   return {
     get enabled() { return compact.matches; },
-    get cameraMode() { return cameraMode; },
+    get cameraMode() { return false; },
     text,
     translate,
     refreshSelection: hud.refresh,
