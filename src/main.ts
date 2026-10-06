@@ -85,7 +85,7 @@ floor.receiveShadow = true;
 scene.add(floor);
 
 // One instanced mesh covers the whole useful camera range with LEGO-like studs.
-const baseplate = baseplateStudField(120);
+const baseplate = baseplateStudField();
 scene.add(baseplate);
 const grid = new T.GridHelper(70, 70, 0xd4d0c6, 0xe0dcd3);
 grid.position.y = 0.003;
@@ -690,7 +690,7 @@ function endDrag() {
     // Drag motion already resolves Y onto the first surface below. On release,
     // finish a nearby valid stud/socket alignment; otherwise just return the
     // piece to normal gravity and contacts.
-    const connected = world.drop(movedId);
+    const connected = world.drop(movedId, currentGround === "baseplate");
     if (connected) {
       audio.play(0.8, false, true);
       toast(text("connected"));
