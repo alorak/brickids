@@ -1,5 +1,10 @@
 import { partPreviews } from "./scene/part-preview";
-import { groundController, groundOptions, groundStyle } from "./scene/ground";
+import {
+  baseplateStudField,
+  groundController,
+  groundOptions,
+  groundStyle,
+} from "./scene/ground";
 import * as T from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
@@ -78,6 +83,10 @@ const floor = new T.Mesh(
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
+
+// One instanced mesh covers the whole useful camera range with LEGO-like studs.
+const baseplate = baseplateStudField(120);
+scene.add(baseplate);
 const grid = new T.GridHelper(70, 70, 0xd4d0c6, 0xe0dcd3);
 grid.position.y = 0.003;
 (grid.material as T.Material).transparent = true;
@@ -87,6 +96,7 @@ let currentGround = groundStyle(localStorage.getItem("bricks-ground"));
 const applyGround = groundController(
   floor.material,
   grid,
+  baseplate,
   renderer.capabilities.getMaxAnisotropy(),
 );
 applyGround(currentGround);
