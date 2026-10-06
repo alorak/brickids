@@ -3,13 +3,14 @@ import assert from "node:assert/strict";
 import { TouchGestures, type TouchPoint, type TouchPair } from "../src/input/touch.ts";
 const p = (pointerId: number, clientX = 0, clientY = 0): TouchPoint => ({ pointerId, clientX, clientY });
 function fixture(hit = true) {
-  const calls = { start: [] as TouchPoint[], move: [] as TouchPoint[], end: 0, orbit: [] as number[][], pinch: [] as [TouchPair, TouchPair][] };
+  const calls = { start: [] as TouchPoint[], move: [] as TouchPoint[], end: 0, orbit: [] as number[][], pinch: [] as [TouchPair, TouchPair][], doubleTap: [] as TouchPoint[] };
   const gesture = new TouchGestures({
     start: point => { calls.start.push(point); return hit; },
     move: point => calls.move.push(point),
     end: () => { calls.end++; },
     orbit: (x, y) => calls.orbit.push([x, y]),
     panZoom: (a, b) => calls.pinch.push([a, b]),
+    doubleTap: point => calls.doubleTap.push(point),
   });
   return { gesture, calls };
 }
@@ -85,4 +86,21 @@ test("coincident touches never produce a zero divisor for zoom", () => {
   const { gesture: g, calls: c } = fixture(false);
   g.down(p(1)); g.down(p(2)); g.move(p(2, 10));
   assert.equal(c.pinch[0][0].distance, 1); assert.equal(c.pinch[0][1].distance, 10);
+});
+
+test("two close taps on a brick emit one double tap", () => {
+  const { gesture: g, calls: c } = fixture();
+  g.down(p(1, 20, 30)); g.up(1);
+  assert.equal(c.doubleTap.length, 0);
+  g.down(p(2, 22, 31)); g.up(2);
+  assert.deepEqual(c.doubleTap, [p(2, 22, 31)]);
+});
+test("dragging or a multi-touch gesture cancels the pending double tap", () => {
+  const { gesture: g, calls: c } = fixture();
+  g.down(p(1, 20, 30)); g.up(1);
+  g.down(p(2, 20, 30)); g.move(p(2, 40, 30)); g.up(2);
+  g.down(p(3, 20, 30)); g.up(3);
+  assert.equal(c.doubleTap.length, 0);
+  g.down(p(4, 20, 30)); g.down(p(5, 60, 30)); g.up(5); g.up(4);
+  assert.equal(c.doubleTap.length, 0);
 });
