@@ -76,7 +76,6 @@ export function setupMobileHud(options: HudOptions) {
 
   function enabled() {
     return root.classList.contains("touch-layout") && !selection.hidden &&
-      !root.classList.contains("library-open") && root.dataset.controlMode !== "camera" &&
       !!source.querySelector("#grab");
   }
   function activate(action: string) {
