@@ -616,3 +616,25 @@ test("a sideways or upside-down loose brick recovers upright at the nearest clea
 
   w.world.free();
 });
+
+
+test("physics step auto-recovers a sleeping loose brick that is not upright", async () => {
+  const w = new BrickWorld(new Scene(), () => {});
+  await w.init();
+
+  const fallen = w.add(
+    catalog[1],
+    "#FAC80A",
+    new Vector3(4, 2.0, 0),
+    new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), Math.PI / 2),
+  );
+  fallen.body.sleep();
+  w.step();
+
+  const up = new Vector3(0, 1, 0).applyQuaternion(fallen.rotation);
+  assert.ok(up.y > 0.999);
+  assert.ok(Math.abs(fallen.position.y - 0.6) < 0.05);
+  assert.equal(w.held.size, 0);
+
+  w.world.free();
+});
