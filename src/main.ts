@@ -333,9 +333,10 @@ function renderSelection() {
     return;
   }
   const held = world.held.has(b.id),
+    lowerLink = world.lowerConnection(b.id),
     links = world.links.filter((l) => component(b.id, world.links).has(l.a));
   $("#selection-content").innerHTML =
-    `<div class="selected-title"><span class="color-chip" style="background:${b.color}"></span><h3>${partLabel(b.spec, language)}</h3><span class="pill">${held ? text("held") : text("free")}</span></div><div class="selection-actions"><button id="grab" class="secondary">${held ? text("drop") : text("grab")} <span>${held ? "Esc" : "↖"}</span></button><button id="rotate" title="R">↻ <span>${text("rotate")}</span></button><button id="upright" title="U">${text("upright")}</button><button id="remove" class="remove" title="${text("delete")} (Delete)" aria-label="${text("delete")}">${text("delete")}</button></div><div class="height-actions"><span>${text("lift")}</span><button id="down">−</button><button id="up">+</button><kbd>Q / E</kbd></div><button id="press" class="press" ${held ? "" : "disabled"}><span>${text("press")}</span><kbd>Space</kbd></button>${links.length ? `<div class="seam-label eyebrow">${text("seam")}</div><select id="seams" aria-label="${text("seam")}">${links.map((l) => `<option value="${world.links.indexOf(l)}">#${l.a} ↔ #${l.b} · ${l.studs} ${text("studs")}</option>`).join("")}</select><button id="detach" class="detach">↗ ${text("detach")}</button>` : ""}`;
+    `<div class="selected-quick"><div class="selected-part-thumb"><img src="${previewPart(b.spec, b.color)}" alt="" draggable="false"></div><div class="selected-part-info"><h3>${partLabel(b.spec, language)}</h3><span class="pill">${held ? text("held") : text("free")}</span></div><button id="quick-detach" class="quick-detach" ${lowerLink ? "" : "disabled"}>↗ ${text("detach")}</button></div><div class="selection-actions"><button id="grab" class="secondary">${held ? text("drop") : text("grab")} <span>${held ? "Esc" : "↖"}</span></button><button id="rotate" title="R">↻ <span>${text("rotate")}</span></button><button id="upright" title="U">${text("upright")}</button><button id="remove" class="remove" title="${text("delete")} (Delete)" aria-label="${text("delete")}">${text("delete")}</button></div><div class="height-actions"><span>${text("lift")}</span><button id="down">−</button><button id="up">+</button><kbd>Q / E</kbd></div><button id="press" class="press" ${held ? "" : "disabled"}><span>${text("press")}</span><kbd>Space</kbd></button>${links.length ? `<div class="seam-label eyebrow">${text("seam")}</div><select id="seams" aria-label="${text("seam")}">${links.map((l) => `<option value="${world.links.indexOf(l)}">#${l.a} ↔ #${l.b} · ${l.studs} ${text("studs")}</option>`).join("")}</select><button id="detach" class="detach">↗ ${text("detach")}</button>` : ""}`;
   $("#grab").onclick = () => {
     cancelTurn();
     cancelPress();
@@ -347,6 +348,7 @@ function renderSelection() {
   $("#remove").onclick = deleteSelected;
   $("#up").onclick = () => height(0.24);
   $("#down").onclick = () => height(-0.24);
+  if (lowerLink) $("#quick-detach").onclick = () => separate(lowerLink);
   const press = $("#press");
   press.onclick = () => startPress();
   if (links.length)
@@ -596,13 +598,39 @@ function pickSeam() {
   return hit?.object.userData.link as Connection | undefined;
 }
 canvas.addEventListener("dblclick", (e) => {
-  if (e.button !== 0 || turning || pressing || !selected || !seamClick) return;
+  if (e.button !== 0 || turning || pressing) return;
   cast(e);
-  const link = pickSeam();
-  if (link && link === seamClick) {
+
+  // Preserve the precise seam double-click behavior when a seam was targeted.
+  const seam = pickSeam();
+  if (seam && seamClick && seam === seamClick) {
     e.preventDefault();
     audio.unlock();
-    separate(link);
+    separate(seam);
+    seamClick = null;
+    return;
+  }
+
+  // Otherwise a double-click on a brick means "separate this brick from the
+  // brick directly below it". Connections above the selected brick survive.
+  const hit = ray.intersectObjects(world.bricks.map((b) => b.mesh), true)[0];
+  if (!hit) {
+    seamClick = null;
+    return;
+  }
+  let obj: T.Object3D = hit.object;
+  while (!obj.userData.brick && obj.parent) obj = obj.parent;
+  const brick = obj.userData.brick as Brick | undefined;
+  if (!brick) {
+    seamClick = null;
+    return;
+  }
+  select(brick);
+  const below = world.lowerConnection(brick.id);
+  if (below) {
+    e.preventDefault();
+    audio.unlock();
+    separate(below);
   }
   seamClick = null;
 });
