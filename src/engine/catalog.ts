@@ -12,6 +12,7 @@ export interface BrickSpec {
 }
 export const catalog: BrickSpec[] = [
   { id: "1x2", cols: 2, rows: 1, height: 1.2, label: "1 × 2" },
+  { id: "1x4", cols: 4, rows: 1, height: 1.2, label: "1 × 4" },
   { id: "2x2", cols: 2, rows: 2, height: 1.2, label: "2 × 2" },
   { id: "2x4", cols: 4, rows: 2, height: 1.2, label: "2 × 4" },
   {
@@ -115,14 +116,18 @@ export const catalog: BrickSpec[] = [
     family: "special",
   },
 ];
-export const colors = [
-  "#df553e",
-  "#e9b938",
-  "#3e7b9b",
-  "#66846b",
-  "#eee6d3",
-  "#383c43",
-];
+/** Solid LEGO/LDraw colours from the current official LDConfig palette. */
+export const colorPalette = [
+  { name: "Blue", hex: "#1E5AA8" },
+  { name: "Medium Azure", hex: "#68C3E2" },
+  { name: "Bright Green", hex: "#58AB41" },
+  { name: "Yellow", hex: "#FAC80A" },
+  { name: "Orange", hex: "#D67923" },
+  { name: "Red", hex: "#B40000" },
+  { name: "Black", hex: "#1B2A34" },
+  { name: "White", hex: "#F4F4F4" },
+] as const;
+export const colors = colorPalette.map((c) => c.hex);
 export function partLabel(s: BrickSpec, language: string) {
   return language === "tr" ? (s.labelTr ?? s.label) : s.label;
 }
