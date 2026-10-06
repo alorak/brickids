@@ -4,12 +4,15 @@ A small, tactile 3D construction playground. Pick up a brick, line up its studs,
 
 Built with TypeScript, Three.js, and Rapier. Runs entirely in the browser and builds to static files for GitHub Pages. No backend, accounts, or API keys.
 
+> Upstream provenance: this repository was initialized from `Berkopan/lego-bricks`. Original project and bundled-audio attribution are retained in this README and `public/audio/CREDITS.txt`.
+
 ## What's in the MVP
 
 - **13 part types** across bricks, plates, tiles, slopes, round pieces, a corner plate and an arch, with six colors and category filters.
 - A fully 3D scene with orbit controls, shadows, hollow brick shells, studs, and visible underside support tubes.
 - Dynamic gravity, friction, collision response, tumbling, and continuous collision detection.
 - A collapsible library on the right. New bricks appear held above the work surface.
+- Horizontal movement follows the pointer, while vertical placement is gravity-constrained: held bricks snap to the first physical surface below and return to dynamics on release.
 - Free movement rather than world-grid placement. Connector alignment is checked in the target brick's local coordinates.
 - Explicit press-to-connect: correct positioning alone never creates a joint. Click **Press to connect** or hold **Space**; a short press stroke toward the mating surface ends with recorded LEGO audio.
 - Connected bricks move together. Separating a seam releases connections crossing that interface and preserves connections on either side, including a five-brick stack splitting into groups of three and two.

@@ -399,6 +399,143 @@ export class BrickWorld {
     this.sync();
     return true;
   }
+  /** Move the held assembly to the pointer's X/Z column and settle it on the
+   * first physical surface below. The input Y is deliberately ignored: drag
+   * height must never allow a brick to remain suspended in mid-air.
+   */
+  snapDown(id: number, target: T.Vector3) {
+    if (!this.held.has(id)) return false;
+    const root = this.get(id);
+    const heldBodies = new Set(
+      [...this.held].map((i) => this.get(i).body.handle),
+    );
+    const topOf = (brick: Brick) => {
+      const box = this.obb(brick),
+        r = box.rotation.elements,
+        h = box.halfSize;
+      return (
+        box.center.y +
+        Math.abs(r[1]) * h.x +
+        Math.abs(r[4]) * h.y +
+        Math.abs(r[7]) * h.z
+      );
+    };
+    const stationaryTop = Math.max(
+      0,
+      ...this.bricks
+        .filter((b) => !this.held.has(b.id))
+        .map((b) => topOf(b)),
+    );
+    const bottomOffset =
+      Math.min(...[...this.held].map((i) => bottomOf(this.obb(this.get(i))))) -
+      root.position.y;
+    // Start completely above every stationary brick, then sweep vertically.
+    const start = new T.Vector3(
+      target.x,
+      stationaryTop - bottomOffset + 0.5,
+      target.z,
+    );
+    const startDelta = start.clone().sub(root.position);
+    const maxToi = Math.max(1, start.y + bottomOffset + 1);
+    const down = { x: 0, y: -1, z: 0 },
+      still = { x: 0, y: 0, z: 0 };
+    const isHeldCollider = (collider: R.Collider) => {
+      const parent = collider.parent();
+      return !!parent && heldBodies.has(parent.handle);
+    };
+
+    // World scene queries use Rapier's broad phase, which is refreshed by a
+    // physics step. Dragging can happen between steps, so use direct pairwise
+    // shape casts instead. First propagate body poses to their colliders.
+    this.world.propagateModifiedBodyPositionsToColliders();
+
+    // Cheap X/Z pruning keeps the pairwise casts local even in a large model.
+    const projectedHalf = (box: OBB) => {
+      const r = box.rotation.elements,
+        h = box.halfSize;
+      return {
+        x: Math.abs(r[0]) * h.x + Math.abs(r[3]) * h.y + Math.abs(r[6]) * h.z,
+        z: Math.abs(r[2]) * h.x + Math.abs(r[5]) * h.y + Math.abs(r[8]) * h.z,
+      };
+    };
+    const horizontalShift = new T.Vector3(
+      target.x - root.position.x,
+      0,
+      target.z - root.position.z,
+    );
+    const movingFootprints = [...this.held].map((i) => {
+      const brick = this.get(i),
+        box = this.obb(brick, brick.position.clone().add(horizontalShift));
+      return { box, half: projectedHalf(box) };
+    });
+    const candidateBodies = new Set<number>();
+    for (const brick of this.bricks) {
+      if (this.held.has(brick.id)) continue;
+      const obstacle = this.obb(brick),
+        oh = projectedHalf(obstacle);
+      if (
+        movingFootprints.some(
+          ({ box, half }) =>
+            Math.abs(box.center.x - obstacle.center.x) <= half.x + oh.x + 0.35 &&
+            Math.abs(box.center.z - obstacle.center.z) <= half.z + oh.z + 0.35,
+        )
+      )
+        candidateBodies.add(brick.body.handle);
+    }
+
+    const movingColliders: R.Collider[] = [],
+      obstacles: R.Collider[] = [];
+    this.world.forEachCollider((collider) => {
+      const parent = collider.parent();
+      if (isHeldCollider(collider)) movingColliders.push(collider);
+      else if (!parent || candidateBodies.has(parent.handle)) obstacles.push(collider);
+    });
+
+    let firstContact = Infinity;
+    for (const moving of movingColliders) {
+      const origin = new T.Vector3()
+        .copy(moving.translation())
+        .add(startDelta);
+      for (const obstacle of obstacles) {
+        const hit = moving.shape.castShape(
+          origin,
+          moving.rotation(),
+          down,
+          obstacle.shape,
+          obstacle.translation(),
+          obstacle.rotation(),
+          still,
+          0.004,
+          maxToi,
+          true,
+        );
+        if (hit) firstContact = Math.min(firstContact, hit.time_of_impact);
+      }
+    }
+    if (!Number.isFinite(firstContact)) return false;
+    const settled = start.clone();
+    settled.y -= firstContact;
+    const delta = settled.sub(root.position);
+    const poses = new Map<number, { p: T.Vector3; q: T.Quaternion }>();
+    for (const i of this.held) {
+      const brick = this.get(i);
+      poses.set(i, {
+        p: brick.position.clone().add(delta),
+        q: brick.rotation.clone(),
+      });
+    }
+    if (!this.clearAt(poses)) return false;
+    for (const [i, { p, q }] of poses) {
+      const brick = this.get(i);
+      brick.body.setTranslation(p, true);
+      brick.body.setRotation(q, true);
+      brick.body.setNextKinematicTranslation(p);
+      brick.body.setNextKinematicRotation(q);
+    }
+    this.sync();
+    return true;
+  }
+
   candidate(id: number) {
     if (!this.held.has(id)) return null;
     const root = this.get(id);

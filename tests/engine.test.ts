@@ -456,3 +456,27 @@ test("alignment assistance rejects distant, sideways, and blocked approaches", a
   assert.equal(component(support.id, w.links).size, 1);
   w.world.free();
 });
+
+
+test("snapDown ignores pointer height and settles on the first surface below", async () => {
+  const w = new BrickWorld(new Scene(), () => {});
+  await w.init();
+  w.add(catalog[1], "#df553e", new Vector3(0, 0.6, 0));
+  const held = w.add(catalog[1], "#66846b", new Vector3(4, 8, 0));
+  w.grab(held.id);
+
+  assert.ok(w.snapDown(held.id, new Vector3(4, 100, 0)));
+  assert.ok(Math.abs(held.position.x - 4) < 1e-6);
+  assert.ok(Math.abs(held.position.y - 0.6) < 0.08, "empty column settles on ground");
+
+  assert.ok(w.snapDown(held.id, new Vector3(0, 100, 0)));
+  assert.ok(Math.abs(held.position.x) < 1e-6);
+  assert.ok(held.position.y > 1.6 && held.position.y < 2.4, "occupied column settles on the brick below");
+
+  const supportedY = held.position.y;
+  w.release();
+  for (let i = 0; i < 60; i++) w.step();
+  assert.ok(held.position.y > 1.5);
+  assert.ok(held.position.y <= supportedY + 0.05);
+  w.world.free();
+});
