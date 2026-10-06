@@ -1317,7 +1317,7 @@ dialog {
     650 11px "DM Sans",
     sans-serif;
   letter-spacing: 0.1px;
-  opacity: 0.72;
+  opacity: 0.58;
   pointer-events: none;
   white-space: nowrap;
   overflow: hidden;
@@ -1352,7 +1352,7 @@ dialog {
 }
 .brick-card:hover .part-card-label,
 .brick-card:focus-visible .part-card-label {
-  opacity: 0.92;
+  opacity: 0.86;
 }
 
 .more-parts {
