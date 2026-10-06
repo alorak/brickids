@@ -855,12 +855,10 @@ function frame(now: number) {
   requestAnimationFrame(frame);
   accumulator += Math.min((now - previous) / 1000, 0.05);
   previous = now;
-  if (!paused) {
-    while (accumulator >= 1 / 120) {
-      world.step();
-      accumulator -= 1 / 120;
-    }
-  } else accumulator = 0;
+  while (accumulator >= 1 / 120) {
+    world.step();
+    accumulator -= 1 / 120;
+  }
   if (turning) {
     const motion = turning,
       b = world.get(motion.id),
@@ -954,15 +952,21 @@ function frame(now: number) {
     $("#alignment").textContent = "";
     ghost.visible = false;
   }
-  $("#counts").textContent =
-    `${world.bricks.length} ${text("pieces")} · ${world.links.length} ${text("connections")}`;
   controls.update();
   renderer.render(scene, camera);
 }
 world
   .init()
   .then(() => {
-    starter();
+    const saved = localStorage.getItem(SAVED_SCENE_KEY);
+    if (saved) {
+      try {
+        world.restore(JSON.parse(saved));
+      } catch {
+        localStorage.removeItem(SAVED_SCENE_KEY);
+        starter();
+      }
+    } else starter();
     $("#loading").remove();
     requestAnimationFrame(frame);
   })
