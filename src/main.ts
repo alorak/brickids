@@ -692,10 +692,15 @@ $("#physics").onclick = () => {
   renderPhysicsButton();
   dirty = true;
 };
-$("#scene-save").onclick = () => {
+function saveSceneLocal() {
   localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(world.serialize()));
   toast(text("savedLocal"));
   $<HTMLDialogElement>("#scene-dialog").close();
+}
+$("#scene-save").onclick = saveSceneLocal;
+$(".brand").onclick = (event) => {
+  event.preventDefault();
+  saveSceneLocal();
 };
 $("#scene-import").onclick = () => $<HTMLInputElement>("#file").click();
 $("#scene-export").onclick = () => {
