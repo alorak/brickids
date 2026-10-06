@@ -268,6 +268,24 @@ export class BrickWorld {
       if (this.elapsed > time) this.quietUntil.delete(id);
     this.sync();
     for (const b of [...this.bricks]) if (b.position.y < -30) this.remove(b.id);
+
+    // A loose brick should never remain parked on its side or upside down.
+    // Wait until Rapier has put it to sleep so active motion is not interrupted,
+    // then recover exactly one brick per step to the nearest clear grid cell.
+    if (!this.held.size) {
+      const fallen = this.bricks.find((brick) => {
+        if (this.links.some((link) => link.a === brick.id || link.b === brick.id))
+          return false;
+        if (!brick.body.isSleeping()) return false;
+        const up = new T.Vector3(0, 1, 0).applyQuaternion(brick.rotation);
+        return up.y < Math.cos(Math.PI / 12);
+      });
+      if (fallen) {
+        this.grab(fallen.id);
+        this.recoverUprightBaseplate(fallen.id);
+        this.release();
+      }
+    }
   }
   get(id: number) {
     return this.bricks.find((b) => b.id === id)!;
