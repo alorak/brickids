@@ -10,6 +10,7 @@ Built with TypeScript, Three.js, and Rapier. Runs entirely in the browser and bu
 
 - **13 part types** across bricks, plates, tiles, slopes, round pieces, a corner plate and an arch, with six colors and category filters.
 - A fully 3D scene with orbit controls, shadows, hollow brick shells, studs, and visible underside support tubes.
+- A white baseplate ground option renders a 120 × 120 stud field with instancing, covering the useful camera range without thousands of separate meshes.
 - Dynamic gravity, friction, collision response, tumbling, and continuous collision detection.
 - A collapsible library on the right. New bricks appear held above the work surface.
 - Horizontal movement follows the pointer, while vertical placement is gravity-constrained: held bricks snap to the first physical surface below and return to dynamics on release.
