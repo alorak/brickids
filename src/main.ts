@@ -550,9 +550,9 @@ sceneDialog.addEventListener("click", (event) =>
 );
 $("#close-scene-menu").onclick = () => sceneDialog.close();
 const deleteDialogEl = $<HTMLDialogElement>("#delete-dialog");
-deleteDialogEl.addEventListener("click", (event) => {
-  if (event.target === deleteDialogEl) cancelDeleteSelected();
-});
+deleteDialogEl.addEventListener("click", (event) =>
+  closeDialogFromBackdrop(deleteDialogEl, event),
+);
 deleteDialogEl.addEventListener("close", () => {
   pendingDeleteId = null;
 });
