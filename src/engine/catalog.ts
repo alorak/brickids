@@ -12,7 +12,6 @@ export interface BrickSpec {
 }
 export const catalog: BrickSpec[] = [
   { id: "1x2", cols: 2, rows: 1, height: 1.2, label: "1 × 2" },
-  { id: "1x4", cols: 4, rows: 1, height: 1.2, label: "1 × 4" },
   { id: "2x2", cols: 2, rows: 2, height: 1.2, label: "2 × 2" },
   { id: "2x4", cols: 4, rows: 2, height: 1.2, label: "2 × 4" },
   {
@@ -115,6 +114,7 @@ export const catalog: BrickSpec[] = [
     shape: "arch",
     family: "special",
   },
+  { id: "1x4", cols: 4, rows: 1, height: 1.2, label: "1 × 4" },
 ];
 /** Solid LEGO/LDraw colours from the current official LDConfig palette. */
 export const colorPalette = [
