@@ -1,4 +1,4 @@
-name: Deploy GitHub Pages
+name: Validate and Deploy GitHub Pages
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 concurrency:
   group: github-pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
