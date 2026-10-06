@@ -87,24 +87,18 @@ grid.position.y = 0.003;
 (grid.material as T.Material).transparent = true;
 (grid.material as T.Material).opacity = 0.42;
 scene.add(grid);
-let currentGround = groundStyle(localStorage.getItem("bricks-ground"));
 const applyGround = groundController(
   floor.material,
   grid,
   baseplate,
   renderer.capabilities.getMaxAnisotropy(),
 );
-applyGround(currentGround);
-$("#ground").onchange = (event) => {
-  currentGround = groundStyle((event.target as HTMLSelectElement).value);
-  applyGround(currentGround);
-  localStorage.setItem("bricks-ground", currentGround);
-};
+// The simplified library is intentionally dedicated to the LEGO-style baseplate.
+applyGround("baseplate");
 
 const world = new BrickWorld(scene, (v) => audio.play(v));
 let selected: Brick | null = null,
   currentColor = colors[0],
-  paused = false,
   panelOpen = innerWidth > 720,
   toastTimer = 0,
   dirty = true;
