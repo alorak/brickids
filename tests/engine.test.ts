@@ -514,3 +514,50 @@ test("drop auto-snaps a nearby tilted brick without making live preview magnetic
 
   w.world.free();
 });
+
+
+test("baseplate drop snaps bottom sockets exactly onto the visible stud grid", async () => {
+  const w = new BrickWorld(new Scene(), () => {});
+  await w.init();
+  const brick = w.add(
+    catalog[1],
+    "#df553e",
+    new Vector3(0.28, 0.6, 0.31),
+    new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), 0.12),
+  );
+  w.grab(brick.id);
+
+  assert.ok(w.drop(brick.id, true));
+  assert.equal(w.held.size, 0);
+  assert.ok(Math.abs(brick.position.x) < 1e-5);
+  assert.ok(Math.abs(brick.position.z) < 1e-5);
+  assert.ok(Math.abs(brick.position.y - 0.6) < 1e-5);
+  assert.ok(brick.rotation.angleTo(new Quaternion()) < 1e-5);
+  assert.equal(w.links.length, 0, "baseplate snap does not invent a brick link");
+
+  w.world.free();
+});
+
+test("lower connection shortcut detaches the selected brick from below but keeps its top attached", async () => {
+  const w = new BrickWorld(new Scene(), () => {});
+  await w.init();
+  const base = w.add(catalog[1], "#3e7b9b", new Vector3(0, 0.6, 0));
+  const middle = w.add(catalog[1], "#df553e", new Vector3(0, 1.8, 0));
+  const top = w.add(catalog[1], "#66846b", new Vector3(0, 3.0, 0));
+  w.connect(middle, base, 4);
+  w.connect(top, middle, 4);
+
+  const below = w.lowerConnection(middle.id);
+  assert.ok(below);
+  assert.equal(below!.a, middle.id);
+  assert.equal(below!.b, base.id);
+  assert.ok(w.detach(below!, middle.id));
+
+  assert.equal(w.lowerConnection(middle.id), null);
+  assert.ok(w.lowerConnection(top.id));
+  assert.equal(component(base.id, w.links).size, 1);
+  assert.equal(component(middle.id, w.links).size, 2);
+  assert.equal(w.held.size, 2);
+
+  w.world.free();
+});

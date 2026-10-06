@@ -5,6 +5,7 @@ import { catalog, connectors, type BrickSpec } from "./catalog";
 import { component, mating, type Link, type Pose } from "./connections";
 import { overlapDepth, bottomOf } from "./overlap";
 import { brickMesh } from "./geometry";
+import { nearestBaseplateStud } from "../baseplate";
 import { solids, type Solid } from "./solids";
 function solidCollider(s: Solid) {
   return s.kind === "box"
@@ -647,18 +648,84 @@ export class BrickWorld {
     this.release();
     return true;
   }
-  /** Release a held assembly. If it is already close to a valid LEGO mating
-   * pose, finish the alignment and connect it before handing it back to physics.
-   * Returns true when an automatic connection was made.
+  /** Align a held assembly with the visual baseplate stud grid. This only
+   * participates at floor level; brick-to-brick mating always has priority.
    */
-  drop(id: number) {
+  snapBaseplate(id: number, maxTilt = Math.PI / 12) {
+    if (!this.held.has(id)) return false;
+    const root = this.get(id);
+    let contact: Brick | null = null;
+    let lowest = Infinity;
+    for (const member of this.held) {
+      const brick = this.get(member);
+      if (!connectors(brick.spec, "bottom").length) continue;
+      const bottom = bottomOf(this.obb(brick));
+      if (bottom < lowest) {
+        lowest = bottom;
+        contact = brick;
+      }
+    }
+    // snapDown has already settled the held assembly. Do not let a baseplate
+    // snap steal a placement from another brick higher in the scene.
+    if (!contact || lowest > 0.12) return false;
+
+    const up = new T.Vector3(0, 1, 0).applyQuaternion(contact.rotation);
+    if (up.y < Math.cos(maxTilt)) return false;
+
+    const axis = new T.Vector3(1, 0, 0).applyQuaternion(contact.rotation);
+    const yaw = Math.atan2(-axis.z, axis.x);
+    const quarter = Math.round(yaw / (Math.PI / 2));
+    const snappedYaw = (quarter * Math.PI) / 2;
+    const freeYaw =
+      contact.spec.shape === "round" &&
+      contact.spec.cols === 1 &&
+      contact.spec.rows === 1;
+    if (!freeYaw && Math.abs(yaw - snappedYaw) > Math.PI / 12) return false;
+
+    const desiredContactRotation = new T.Quaternion().setFromAxisAngle(
+      new T.Vector3(0, 1, 0),
+      freeYaw ? yaw : snappedYaw,
+    );
+    const delta = desiredContactRotation
+      .clone()
+      .multiply(contact.rotation.clone().invert());
+
+    const socket = connectors(contact.spec, "bottom")[0];
+    const projectedSocket = new T.Vector3(socket.x, 0, socket.z)
+      .applyQuaternion(desiredContactRotation)
+      .add(contact.position);
+    const desiredContactPosition = contact.position.clone();
+    desiredContactPosition.x +=
+      nearestBaseplateStud(projectedSocket.x) - projectedSocket.x;
+    desiredContactPosition.z +=
+      nearestBaseplateStud(projectedSocket.z) - projectedSocket.z;
+    desiredContactPosition.y = contact.spec.height / 2;
+
+    const target = root.position
+      .clone()
+      .sub(contact.position)
+      .applyQuaternion(delta)
+      .add(desiredContactPosition);
+    const rotation = delta.clone().multiply(root.rotation);
+    return this.transform(id, target, rotation);
+  }
+
+  /** Release a held assembly. Prefer a real brick mating pose; when baseplate
+   * mode is active, otherwise align a floor-level piece to the baseplate studs.
+   */
+  drop(id: number, baseplate = false) {
     if (!this.held.has(id)) return false;
     // Drop is intentionally a little more forgiving than the live preview:
     // a piece that is already resting near compatible studs may straighten
     // from up to 15° of pitch/roll, but distance and yaw limits stay unchanged.
     if (this.press(id, Math.PI / 12)) return true;
+    const snapped = baseplate && this.snapBaseplate(id, Math.PI / 12);
     this.release();
-    return false;
+    return snapped;
+  }
+
+  lowerConnection(id: number) {
+    return this.links.find((link) => link.a === id) ?? null;
   }
 
   detach(link: Connection, _from: number) {
