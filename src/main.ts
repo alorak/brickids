@@ -303,28 +303,9 @@ function renderCards() {
         new T.Vector3(controls.target.x, 0, controls.target.z),
       );
     };
-    el.ondragstart = (event) => {
-      if (!event.dataTransfer) return;
-      event.dataTransfer.effectAllowed = "copy";
-      const payload = JSON.stringify({
-        spec: el.dataset.spec,
-        color: currentColor,
-      });
-      event.dataTransfer.setData("application/x-brickids-part", payload);
-      event.dataTransfer.setData("text/plain", payload);
-      const preview = el.querySelector<HTMLImageElement>(".part-preview");
-      if (preview)
-        event.dataTransfer.setDragImage(
-          preview,
-          preview.clientWidth / 2,
-          preview.clientHeight / 2,
-        );
-      libraryDragging = true;
-      el.classList.add("dragging");
-    };
-    el.ondragend = () => {
-      el.classList.remove("dragging");
-      window.setTimeout(() => (libraryDragging = false), 0);
+    el.onpointerdown = (event) => {
+      if (event.button !== 0 || event.pointerType === "touch") return;
+      beginLibraryPointerDrag(el, event);
     };
   });
 }
@@ -588,15 +569,24 @@ document.querySelectorAll<HTMLElement>("[data-lang]").forEach(
 );
 function setLibraryOpen(open: boolean) {
   panelOpen = open;
-  const library = $("#library");
-  if (!open && library.contains(document.activeElement))
-    $("#library-toggle").focus({ preventScroll: true });
-  library.inert = !open;
-  library.classList.toggle("closed", !open);
+  const library = $("#library"),
+    body = $("#library-body"),
+    titlebar = $("#library-titlebar");
+  if (!open && body.contains(document.activeElement))
+    titlebar.focus({ preventScroll: true });
+  body.inert = !open;
+  body.hidden = !open;
+  library.classList.toggle("collapsed", !open);
   document.documentElement.classList.toggle("library-open", open);
-  $("#library-toggle").setAttribute("aria-expanded", String(open));
+  titlebar.setAttribute("aria-expanded", String(open));
 }
-$("#library-toggle").onclick = () => setLibraryOpen(!panelOpen);
+const libraryTitlebar = $("#library-titlebar");
+libraryTitlebar.onclick = () => setLibraryOpen(!panelOpen);
+libraryTitlebar.onkeydown = (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  setLibraryOpen(!panelOpen);
+};
 function closeDialogFromBackdrop(dialog: HTMLDialogElement, event: MouseEvent) {
   if (event.target !== dialog) return;
   const box = dialog.getBoundingClientRect();
@@ -608,7 +598,6 @@ function closeDialogFromBackdrop(dialog: HTMLDialogElement, event: MouseEvent) {
   if (!inside) dialog.close();
 }
 $("#scene-menu-toggle").onclick = () => {
-  setLibraryOpen(false);
   cancelInteraction();
   $<HTMLDialogElement>("#scene-dialog").showModal();
 };
