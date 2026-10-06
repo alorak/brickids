@@ -348,6 +348,50 @@ html.touch-layout #selection.selection {
   display: none !important;
 }
 
+/* Touch devices use only the compact Separate / Rotate / Delete box. */
+html.touch-layout #selection.selection {
+  display: block;
+}
+.touch-layout #selection-content {
+  display: block;
+  position: fixed;
+  top: calc(62px + var(--safe-top));
+  left: var(--edge-left);
+  width: auto;
+  pointer-events: auto;
+  z-index: 6;
+}
+.touch-layout #selection-content .selection-minimal {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid #c9d9e8cc;
+  border-radius: 10px;
+  background: #f7fbffdd;
+  box-shadow: 0 3px 12px #15334d18;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+.touch-layout #selection-content .selected-part-thumb-large {
+  display: none;
+}
+.touch-layout #selection-content .selection-icon-button {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 6px;
+  border-radius: 8px;
+}
+.touch-layout #selection-content .selection-icon-button svg {
+  width: 22px;
+  height: 22px;
+}
+.touch-layout #selection-content .selection-bridge {
+  display: none !important;
+}
+
 /* Final phone layout: colors stay fixed at the left, while parts remain a
    horizontally scrollable two-row strip to their right. */
 @media (max-width: 760px) {
@@ -484,46 +528,4 @@ html.touch-layout #selection.selection {
     margin: 0;
   }
 
-  html.touch-layout #selection.selection {
-    display: block;
-  }
-  .touch-layout #selection-content {
-    display: block;
-    position: fixed;
-    top: calc(62px + var(--safe-top));
-    left: var(--edge-left);
-    width: auto;
-    pointer-events: auto;
-    z-index: 6;
-  }
-  .touch-layout #selection-content .selection-minimal {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    padding: 3px;
-    border: 1px solid #c9d9e8cc;
-    border-radius: 10px;
-    background: #f7fbffdd;
-    box-shadow: 0 3px 12px #15334d18;
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-  }
-  .touch-layout #selection-content .selected-part-thumb-large {
-    display: none;
-  }
-  .touch-layout #selection-content .selection-icon-button {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    min-height: 34px;
-    padding: 6px;
-    border-radius: 8px;
-  }
-  .touch-layout #selection-content .selection-icon-button svg {
-    width: 22px;
-    height: 22px;
-  }
-  .touch-layout #selection-content .selection-bridge {
-    display: none !important;
-  }
 }
