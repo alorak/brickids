@@ -195,6 +195,10 @@ A current browser with WebGL2 and WebAssembly support is recommended.
 | `src/engine/connections.ts` | Mating rules and connected-component traversal |
 | `src/engine/seams.ts` | Contact/seam geometry |
 | `src/engine/world.ts` | Rapier bodies, snapping, joints, separation, persistence |
+| `src/import/ldraw.ts` | LDR/MPD parsing, flattening, native/foreign classification |
+| `src/import/reconstruct-connections.ts` | Strict native joint reconstruction after import |
+| `src/import/foreign-world.ts` | Foreign LDraw visuals, editing, CDN loading, persistence |
+| `src/export/ldraw.ts` | Native and foreign LDraw type-1 export |
 | `src/engine/audio.ts` | Cached local sound playback |
 | `src/scene/ground.ts` | Baseplate stud field and ground rendering |
 | `src/i18n.ts` | English/Turkish interface strings |
