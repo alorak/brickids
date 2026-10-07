@@ -154,6 +154,83 @@ test("native snapDown treats a foreign standalone collider as a physical surface
   native.world.free();
 });
 
+test("foreign snapDown settles on the baseplate instead of preserving pointer height", async () => {
+  const scene = new Scene();
+  const native = new BrickWorld(scene, () => {});
+  await native.init();
+
+  const foreign = new ForeignLDrawWorld(scene, false);
+  foreign.attachPhysics(native.world);
+  const part = foreign.add({ ...sample, p: [0, 8, 0] });
+
+  assert.ok(foreign.snapDown(part.id, new Vector3(3, 100, -2)));
+  assert.ok(Math.abs(part.position.x - 3) < 1e-6);
+  assert.ok(Math.abs(part.position.z + 2) < 1e-6);
+  assert.ok(
+    part.position.y > 0.25 && part.position.y < 0.4,
+    "fallback foreign collider should settle immediately above the baseplate",
+  );
+
+  native.world.free();
+});
+
+test("foreign drop settles on the first foreign physical surface below", async () => {
+  await R.init();
+  const physics = new R.World({ x: 0, y: -24, z: 0 });
+  physics.createCollider(
+    R.ColliderDesc.cuboid(100, 0.2, 100)
+      .setTranslation(0, -0.2, 0)
+      .setFriction(0.65),
+  );
+
+  const foreign = new ForeignLDrawWorld(new Scene(), false);
+  foreign.attachPhysics(physics);
+  foreign.add({ ...sample, id: -1, p: [0, 0.5, 0] });
+  const upper = foreign.add({ ...sample, id: -2, p: [0, 6, 0] });
+
+  assert.ok(foreign.drop(upper.id));
+  assert.ok(
+    upper.position.y > 1.0 && upper.position.y < 1.25,
+    "upper foreign part should rest on the lower foreign collider",
+  );
+
+  physics.free();
+});
+
+test("collision-aware foreign transforms cannot tunnel through an obstacle", async () => {
+  await R.init();
+  const physics = new R.World({ x: 0, y: 0, z: 0 });
+  physics.createCollider(
+    R.ColliderDesc.cuboid(0.5, 0.5, 0.5).setTranslation(2, 1, 0),
+  );
+
+  const foreign = new ForeignLDrawWorld(new Scene(), false);
+  foreign.attachPhysics(physics);
+  const part = foreign.add({ ...sample, p: [0, 1, 0] });
+
+  assert.equal(
+    foreign.transformCollisionAware(
+      part.id,
+      new Vector3(4, 1, 0),
+      part.rotation,
+    ),
+    false,
+  );
+  assert.ok(Math.abs(part.position.x) < 1e-9);
+
+  assert.equal(
+    foreign.transformCollisionAware(
+      part.id,
+      new Vector3(0, 1, 2),
+      part.rotation,
+    ),
+    true,
+  );
+  assert.ok(Math.abs(part.position.z - 2) < 1e-9);
+
+  physics.free();
+});
+
 test("attaching physics after restore creates colliders for existing foreign parts", async () => {
   await R.init();
   const foreign = new ForeignLDrawWorld(new Scene(), false);
