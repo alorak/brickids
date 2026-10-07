@@ -195,6 +195,10 @@ Güncel WebGL2 ve WebAssembly destekli bir tarayıcı önerilir.
 | `src/engine/connections.ts` | Bağlantı kuralları ve bağlı bileşen dolaşımı |
 | `src/engine/seams.ts` | Temas/ayrım çizgisi geometrisi |
 | `src/engine/world.ts` | Rapier body'leri, snap, joint, ayırma ve persistence |
+| `src/import/ldraw.ts` | LDR/MPD parse, flatten ve native/foreign sınıflandırma |
+| `src/import/reconstruct-connections.ts` | Import sonrası strict native bağlantı yeniden kurulumu |
+| `src/import/foreign-world.ts` | Foreign LDraw görselleri, düzenleme, CDN yükleme ve persistence |
+| `src/export/ldraw.ts` | Native ve foreign LDraw type-1 export |
 | `src/engine/audio.ts` | Yerel seslerin oynatılması |
 | `src/scene/ground.ts` | Baseplate stud alanı ve zemin çizimi |
 | `src/i18n.ts` | İngilizce/Türkçe arayüz metinleri |
