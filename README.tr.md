@@ -135,7 +135,7 @@ Kaydedilen sahne aynı tarayıcı/profil ile sonraki açılışta otomatik olara
 
 ### Dosya içe / dışa aktarma
 
-Sahne menüsünde JSON import ve export desteği de bulunur. Böylece yapılar başka tarayıcıya taşınabilir veya harici yedek olarak saklanabilir.
+Sahne menüsünde JSON import/export desteği bulunur; böylece brickids sahneleri başka tarayıcıya taşınabilir veya harici yedek olarak saklanabilir. Ayrıca yapı **LDraw `.ldr` formatında dışa aktarılabilir** ve LDraw uyumlu araçlarda açılabilir. brickids konumları, dönüşleri, desteklenen parça tipleri ve renkleri LDraw type-1 parça referanslarına çevrilir; hızlı palet standart LDraw renk kodlarını, diğer renkler ise direct RGB değerlerini kullanır.
 
 Dil seçimi ve Diğer renk seçimi de yerel olarak hatırlanır.
 
