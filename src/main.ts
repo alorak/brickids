@@ -940,6 +940,7 @@ const ray = new T.Raycaster(),
   mouse = new T.Vector2();
 let drag: null | {
   id: number;
+  foreign: boolean;
   pointerId: number;
   startX: number;
   startY: number;
@@ -954,6 +955,22 @@ function cast(e: { clientX: number; clientY: number }) {
     (-(e.clientY - r.top) / r.height) * 2 + 1,
   );
   ray.setFromCamera(mouse, camera);
+}
+function pickableObjects() {
+  return [
+    ...world.bricks.map((brick) => brick.mesh),
+    ...foreignWorld.pickObjects(),
+  ];
+}
+function selectableFromObject(object: T.Object3D): SelectablePart | null {
+  let current: T.Object3D | null = object;
+  while (current) {
+    if (current.userData.brick) return current.userData.brick as Brick;
+    if (current.userData.foreignPart)
+      return current.userData.foreignPart as ForeignLDrawPart;
+    current = current.parent;
+  }
+  return null;
 }
 function workspacePoint(e: { clientX: number; clientY: number }) {
   cast(e);
@@ -1150,23 +1167,19 @@ function pickSeam() {
     [...seamLines.values()].filter((l) => l.visible && l.userData.interactive),
     false,
   );
-  const front = ray.intersectObjects(
-    world.bricks.map((b) => b.mesh),
-    true,
-  )[0]?.distance;
+  const front = ray.intersectObjects(pickableObjects(), true)[0]?.distance;
   const hit = hits.find((h) => visibleSeamHit(h.distance, front));
   return hit?.object.userData.link as Connection | undefined;
 }
 function separateBrickAtPoint(e: { clientX: number; clientY: number }) {
   cast(e);
-  const hit = ray.intersectObjects(world.bricks.map((b) => b.mesh), true)[0];
+  const hit = ray.intersectObjects(pickableObjects(), true)[0];
   if (!hit) return false;
-  let obj: T.Object3D = hit.object;
-  while (!obj.userData.brick && obj.parent) obj = obj.parent;
-  const brick = obj.userData.brick as Brick | undefined;
-  if (!brick) return false;
-  select(brick);
-  const below = world.lowerConnection(brick.id);
+  const part = selectableFromObject(hit.object);
+  if (!part) return false;
+  select(part);
+  if (isForeignPart(part)) return false;
+  const below = world.lowerConnection(part.id);
   if (!below) return false;
   audio.unlock();
   separate(below);
@@ -1195,25 +1208,30 @@ function beginDrag(e: TouchPoint): boolean {
   if (pressing || turning) return false;
   cast(e);
   seamClick = null;
-  const hit = ray.intersectObjects(world.bricks.map((b) => b.mesh), true)[0];
+  const hit = ray.intersectObjects(pickableObjects(), true)[0];
   if (!hit) {
-    if (selected && world.held.has(selected.id)) world.drop(selected.id, true);
+    if (selected && !isForeignPart(selected) && world.held.has(selected.id))
+      world.drop(selected.id, true);
     select(null);
     return false;
   }
-  let obj: T.Object3D = hit.object;
-  while (!obj.userData.brick && obj.parent) obj = obj.parent;
-  const b = obj.userData.brick as Brick;
-  const plane = new T.Plane(new T.Vector3(0, 1, 0), -b.position.y);
+  const part = selectableFromObject(hit.object);
+  if (!part) return false;
+  const plane = new T.Plane(new T.Vector3(0, 1, 0), -part.position.y);
   const p = ray.ray.intersectPlane(plane, new T.Vector3());
   if (!p) return false;
-  select(b);
+  select(part);
   controls.enabled = false;
   // Keep the horizontal plane fixed: height controls change only Y.
   drag = {
-    id: b.id, pointerId: e.pointerId,
-    startX: e.clientX, startY: e.clientY, moving: false,
-    offset: b.position.clone().sub(p), plane,
+    id: part.id,
+    foreign: isForeignPart(part),
+    pointerId: e.pointerId,
+    startX: e.clientX,
+    startY: e.clientY,
+    moving: false,
+    offset: part.position.clone().sub(p),
+    plane,
   };
   return true;
 }
@@ -1221,16 +1239,28 @@ function moveDrag(e: TouchPoint) {
   if (!drag || drag.pointerId !== e.pointerId || turning || pressing) return;
   cast(e);
   if (!drag.moving && Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > 4) {
-    world.grab(drag.id);
+    if (!drag.foreign) world.grab(drag.id);
     drag.moving = true;
     dirty = true;
   }
   if (drag.moving) {
-    const b = world.get(drag.id);
-    // The gesture plane supplies only X/Z. The engine resolves Y by casting the
-    // held assembly straight down onto the first surface below the pointer.
-    const target = dragTarget(ray.ray, drag.plane, drag.offset, 0);
-    if (target) world.snapDown(b.id, target);
+    if (drag.foreign) {
+      const part = foreignWorld.get(drag.id);
+      if (!part) return;
+      const target = dragTarget(
+        ray.ray,
+        drag.plane,
+        drag.offset,
+        part.position.y,
+      );
+      if (target) foreignWorld.transform(part.id, target, part.rotation);
+    } else {
+      const b = world.get(drag.id);
+      // The gesture plane supplies only X/Z. The engine resolves Y by casting the
+      // held assembly straight down onto the first surface below the pointer.
+      const target = dragTarget(ray.ray, drag.plane, drag.offset, 0);
+      if (target) world.snapDown(b.id, target);
+    }
   }
 }
 // Install capture handlers BEFORE the mouse handlers and keep touches out of OrbitControls.
@@ -1273,7 +1303,12 @@ canvas.addEventListener("pointermove", (e) => {
   moveDrag(e);
 });
 function endDrag() {
-  const movedId = drag?.moving && world.held.has(drag.id) ? drag.id : null;
+  const state = drag;
+  const movedId =
+    state?.moving && !state.foreign && world.held.has(state.id)
+      ? state.id
+      : null;
+  const movedForeign = !!state?.moving && state.foreign;
   drag = null;
   controls.enabled = true;
   if (movedId !== null) {
@@ -1281,9 +1316,9 @@ function endDrag() {
     // finish a nearby valid stud/socket alignment; otherwise just return the
     // piece to normal gravity and contacts.
     const connected = world.drop(movedId, true);
-    if (connected) {
-      audio.play(0.8, false, true);
-    }
+    if (connected) audio.play(0.8, false, true);
+    dirty = true;
+  } else if (movedForeign) {
     dirty = true;
   }
 }
