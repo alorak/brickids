@@ -115,6 +115,7 @@ applyGround("baseplate");
 
 const world = new BrickWorld(scene, (v) => audio.play(v));
 const foreignWorld = new ForeignLDrawWorld(scene);
+const scenePartCount = () => world.bricks.length + foreignWorld.parts.length;
 type SelectablePart = Brick | ForeignLDrawPart;
 const isForeignPart = (part: SelectablePart | null): part is ForeignLDrawPart =>
   part?.kind === "foreign";
@@ -982,7 +983,7 @@ function workspacePoint(e: { clientX: number; clientY: number }) {
   );
 }
 function placeLibraryPart(specId: string, color: string, target: T.Vector3) {
-  if (world.bricks.length >= 250) {
+  if (scenePartCount() >= 250) {
     toast(text("limit"));
     return null;
   }
@@ -1087,7 +1088,7 @@ window.addEventListener(
     // sidebar, create the real Three.js brick and move that actual object.
     if (state.brickId === null) {
       if (pointerInsideLibrary(event)) return;
-      if (world.bricks.length >= 250) {
+      if (scenePartCount() >= 250) {
         toast(text("limit"));
         cancelLibraryPointerDrag();
         return;
@@ -1466,7 +1467,13 @@ function frame(now: number) {
       }
     }
   }
-  if (selected && !world.bricks.includes(selected)) select(null);
+  if (
+    selected &&
+    (isForeignPart(selected)
+      ? !foreignWorld.parts.includes(selected)
+      : !world.bricks.includes(selected))
+  )
+    select(null);
   if (dirty) {
     renderSelection();
     dirty = false;
@@ -1474,20 +1481,22 @@ function frame(now: number) {
   updateSeams();
   outline.visible = !!selected;
   if (selected) {
-    outline.setFromObject(selected.mesh);
-    const candidate = turning ? null : world.candidate(selected.id);
+    outline.setFromObject(isForeignPart(selected) ? selected.object : selected.mesh);
+    const candidate =
+      isForeignPart(selected) || turning ? null : world.candidate(selected.id);
     (outline.material as T.LineBasicMaterial).color.set(
-      candidate ? 0x46866b : 0x8c9591,
+      candidate ? 0x46866b : isForeignPart(selected) ? 0x4778a8 : 0x8c9591,
     );
-    $("#alignment").textContent = world.held.has(selected.id)
-      ? turning
-        ? turning.label
-        : pressing
-          ? text("pressing")
-          : candidate
-            ? mobile?.enabled ? mobile.text("ready") : text("ready")
-            : ""
-      : "";
+    $("#alignment").textContent =
+      !isForeignPart(selected) && world.held.has(selected.id)
+        ? turning
+          ? turning.label
+          : pressing
+            ? text("pressing")
+            : candidate
+              ? mobile?.enabled ? mobile.text("ready") : text("ready")
+              : ""
+        : "";
     $("#alignment").classList.toggle("ready", !!candidate);
     $("#press")?.toggleAttribute("disabled", !candidate);
     ghost.visible = !!candidate;
