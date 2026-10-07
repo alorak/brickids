@@ -116,9 +116,8 @@ export function brickToLDrawLine(brick: SerializedBrick) {
   if (rotation.lengthSq() < 1e-12) throw new Error("Invalid brick rotation");
   rotation.normalize();
 
-  const origin = new Vector3(
-    ...(part.origin ?? [0, part.height / 2, 0]),
-  );
+  const [ox, oy, oz] = part.origin ?? [0, part.height / 2, 0];
+  const origin = new Vector3(ox, oy, oz);
   const ldrawPosition = ldrawVector(
     origin.applyQuaternion(rotation).add(position),
   );
