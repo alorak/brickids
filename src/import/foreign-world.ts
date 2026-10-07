@@ -24,6 +24,9 @@ export function isValidForeignPartData(data: ForeignLDrawPartData) {
     data.file.length > 0 &&
     data.file.length <= 180 &&
     !data.file.includes("..") &&
+    !data.file.startsWith("/") &&
+    !data.file.startsWith("\\") &&
+    !/[\r\n\0]/.test(data.file) &&
     !/^[a-z]+:/i.test(data.file) &&
     /^#[0-9a-f]{6}$/i.test(data.color) &&
     typeof data.colorToken === "string" &&
