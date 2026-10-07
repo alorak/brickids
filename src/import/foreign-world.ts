@@ -208,6 +208,162 @@ export class ForeignLDrawWorld {
     part.collider.setRotation(part.rotation);
   }
 
+  private shape(part: ForeignLDrawPart) {
+    return new R.Cuboid(
+      part.colliderHalf.x,
+      part.colliderHalf.y,
+      part.colliderHalf.z,
+    );
+  }
+
+  private colliderCenterAt(
+    part: ForeignLDrawPart,
+    position: T.Vector3,
+    rotation: T.Quaternion,
+  ) {
+    return part.colliderCenter
+      .clone()
+      .applyQuaternion(rotation)
+      .add(position);
+  }
+
+  private obstacles(part: ForeignLDrawPart) {
+    const obstacles: R.Collider[] = [];
+    if (!this.physicsWorld) return obstacles;
+    this.physicsWorld.forEachCollider((collider) => {
+      if (part.collider && collider.handle === part.collider.handle) return;
+      obstacles.push(collider);
+    });
+    return obstacles;
+  }
+
+  private clearAt(
+    part: ForeignLDrawPart,
+    position: T.Vector3,
+    rotation: T.Quaternion,
+  ) {
+    if (!this.physicsWorld || !part.collider) return true;
+    this.physicsWorld.propagateModifiedBodyPositionsToColliders();
+    const shape = this.shape(part),
+      center = this.colliderCenterAt(part, position, rotation);
+    return !this.obstacles(part).some((obstacle) =>
+      shape.intersectsShape(
+        center,
+        rotation,
+        obstacle.shape,
+        obstacle.translation(),
+        obstacle.rotation(),
+      ),
+    );
+  }
+
+  /**
+   * Collision-aware direct edit used by keyboard nudges and rotations.
+   * The pose is swept in small increments so a large input cannot tunnel
+   * through a native or foreign obstacle.
+   */
+  transformCollisionAware(
+    id: number,
+    target: T.Vector3,
+    rotation?: T.Quaternion,
+  ) {
+    const part = this.get(id);
+    if (!part) return false;
+    const desired = (rotation ?? part.rotation).clone().normalize();
+    if (!this.physicsWorld || !part.collider)
+      return this.transform(id, target, desired);
+
+    const distance = part.position.distanceTo(target),
+      angle = part.rotation.angleTo(desired),
+      radius = part.colliderHalf.length() + part.colliderCenter.length(),
+      steps = Math.max(
+        1,
+        Math.ceil((distance + angle * Math.max(radius, 0.1)) / 0.12),
+      );
+
+    for (let step = 1; step <= steps; step++) {
+      const t = step / steps,
+        position = part.position.clone().lerp(target, t),
+        q = part.rotation.clone().slerp(desired, t).normalize();
+      if (!this.clearAt(part, position, q)) return false;
+    }
+
+    return this.transform(id, target, desired);
+  }
+
+  /**
+   * Move a foreign part to an X/Z column and settle it onto the first physical
+   * Rapier surface below. The incoming Y is intentionally ignored.
+   */
+  snapDown(id: number, target: T.Vector3) {
+    const part = this.get(id);
+    if (!part) return false;
+    if (!this.physicsWorld || !part.collider)
+      return this.transform(
+        id,
+        new T.Vector3(target.x, part.position.y, target.z),
+        part.rotation,
+      );
+
+    this.physicsWorld.propagateModifiedBodyPositionsToColliders();
+    const obstacles = this.obstacles(part);
+    if (!obstacles.length) return false;
+
+    const shape = this.shape(part),
+      down = { x: 0, y: -1, z: 0 },
+      still = { x: 0, y: 0, z: 0 };
+
+    let highestCenter = 0;
+    for (const obstacle of obstacles)
+      highestCenter = Math.max(highestCenter, obstacle.translation().y);
+
+    // Foreign colliders are clamped to <=32 half-units. A generous margin
+    // keeps the cast origin above imported/native geometry regardless of tilt.
+    const startRoot = new T.Vector3(
+      target.x,
+      Math.max(part.position.y, highestCenter + 70),
+      target.z,
+    );
+    const startCenter = this.colliderCenterAt(
+      part,
+      startRoot,
+      part.rotation,
+    );
+    const maxToi = Math.max(1, startCenter.y + 1100);
+
+    let firstContact = Infinity;
+    for (const obstacle of obstacles) {
+      const hit = shape.castShape(
+        startCenter,
+        part.rotation,
+        down,
+        obstacle.shape,
+        obstacle.translation(),
+        obstacle.rotation(),
+        still,
+        0.004,
+        maxToi,
+        true,
+      );
+      if (hit) firstContact = Math.min(firstContact, hit.time_of_impact);
+    }
+    if (!Number.isFinite(firstContact)) return false;
+
+    const settled = startRoot.clone();
+    settled.y -= firstContact;
+
+    // A direct shape cast defines the first non-penetrating surface. Keep a
+    // tiny clearance so subsequent manual transforms do not start overlapped.
+    settled.y += 0.002;
+    return this.transform(id, settled, part.rotation);
+  }
+
+  drop(id: number) {
+    const part = this.get(id);
+    if (!part) return false;
+    return this.snapDown(id, part.position);
+  }
+
   private rebuildCollider(
     part: ForeignLDrawPart,
     box?: T.Box3,

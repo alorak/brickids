@@ -541,11 +541,14 @@ function height(amount: number) {
 function translateSelected(delta: T.Vector3) {
   if (!selected || pressing || turning) return;
   if (isForeignPart(selected)) {
-    foreignWorld.transform(
-      selected.id,
-      selected.position.clone().add(delta),
-      selected.rotation,
-    );
+    if (
+      !foreignWorld.transformCollisionAware(
+        selected.id,
+        selected.position.clone().add(delta),
+        selected.rotation,
+      )
+    )
+      toast(text("blocked"));
     dirty = true;
     return;
   }
@@ -570,7 +573,8 @@ function rotate(axis: "x" | "y" | "z") {
     .multiply(selected.rotation);
 
   if (isForeignPart(selected)) {
-    foreignWorld.transform(selected.id, selected.position, q);
+    if (!foreignWorld.transformCollisionAware(selected.id, selected.position, q))
+      toast(text("blocked"));
     dirty = true;
     return;
   }
@@ -589,7 +593,8 @@ function upright() {
     (Math.round(e.y / (Math.PI / 2)) * Math.PI) / 2,
   );
   if (isForeignPart(selected)) {
-    foreignWorld.transform(selected.id, selected.position, q);
+    if (!foreignWorld.transformCollisionAware(selected.id, selected.position, q))
+      toast(text("blocked"));
     dirty = true;
     return;
   }
@@ -1250,7 +1255,9 @@ function moveDrag(e: TouchPoint) {
         drag.offset,
         part.position.y,
       );
-      if (target) foreignWorld.transform(part.id, target, part.rotation);
+      // Match native drag semantics: pointer controls X/Z while Rapier chooses
+      // the first valid physical surface below the foreign part.
+      if (target) foreignWorld.snapDown(part.id, target);
     } else {
       const b = world.get(drag.id);
       // The gesture plane supplies only X/Z. The engine resolves Y by casting the
@@ -1315,7 +1322,10 @@ function endDrag() {
     const connected = world.drop(movedId, true);
     if (connected) audio.play(0.8, false, true);
     dirty = true;
-  } else if (movedForeign) {
+  } else if (movedForeign && state) {
+    // Re-settle on release in case the last pointer event happened between
+    // physics/broad-phase updates.
+    if (!foreignWorld.drop(state.id)) toast(text("blocked"));
     dirty = true;
   }
 }
