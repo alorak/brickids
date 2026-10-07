@@ -118,6 +118,34 @@ test("BrickWorld restore accepts reconstructed LDraw links and keeps the stack j
   world.world.free();
 });
 
+test("reconstructs a connection when the whole imported assembly is rotated in 3D", () => {
+  const rotation = new Quaternion()
+    .setFromAxisAngle(new Vector3(0, 0, 1), 0.7)
+    .multiply(
+      new Quaternion().setFromAxisAngle(
+        new Vector3(0, 1, 0),
+        Math.PI / 2,
+      ),
+    )
+    .normalize();
+  const lower = new Vector3(0, 0.6, 0).applyQuaternion(rotation);
+  const upper = new Vector3(0, 1.8, 0).applyQuaternion(rotation);
+  const q = rotation.toArray();
+
+  const result = importLDraw(
+    exportLDraw({
+      version: 1,
+      bricks: [
+        { id: 1, spec: "2x2", color: "#C91A09", p: lower.toArray(), q },
+        { id: 2, spec: "2x2", color: "#0055BF", p: upper.toArray(), q },
+      ],
+    }),
+  );
+
+  assert.equal(result.reconstructedConnections, 1);
+  assert.deepEqual(result.scene.links, [{ a: 2, b: 1, studs: 4 }]);
+});
+
 test("reconstructs multiple supports for one wide imported brick", () => {
   const output = exportLDraw({
     version: 1,
