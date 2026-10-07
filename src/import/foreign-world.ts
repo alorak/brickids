@@ -36,7 +36,8 @@ export function isValidForeignPartData(data: ForeignLDrawPartData) {
     Array.isArray(data.q) &&
     data.q.length === 4 &&
     [...data.p, ...data.q].every(Number.isFinite) &&
-    data.p.every((n) => Math.abs(n) <= 1000)
+    data.p.every((n) => Math.abs(n) <= 1000) &&
+    data.q.reduce((sum, n) => sum + n * n, 0) > 1e-12
   );
 }
 
