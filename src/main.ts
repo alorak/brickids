@@ -357,12 +357,25 @@ $("#more-parts").onclick = () => {
   morePartsOpen = !morePartsOpen;
   renderCards();
 };
-function select(b: Brick | null) {
+function select(b: SelectablePart | null) {
   cancelTurn();
   cancelPress();
   if (selected?.id !== b?.id) mobile?.selected();
   selected = b;
   dirty = true;
+}
+function escapeHtml(value: string) {
+  return value.replace(
+    /[&<>"']/g,
+    (char) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[char]!,
+  );
 }
 function renderSelection() {
   const b = selected;
@@ -371,6 +384,43 @@ function renderSelection() {
     $("#selection-content").innerHTML = "";
     return;
   }
+
+  if (isForeignPart(b)) {
+    $("#selection-content").innerHTML = `
+      <div class="selection-minimal foreign-selection">
+        <div class="selected-part-thumb selected-part-thumb-large foreign-part-thumb" title="${escapeHtml(b.file)}">
+          <span>LDRAW</span>
+          <strong>${escapeHtml(b.file.split("/").pop() ?? b.file)}</strong>
+        </div>
+        <button class="selection-icon-button separate-icon" disabled
+          aria-label="${text("detach")}" title="${text("detach")}">
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <rect x="7" y="14" width="12" height="12" rx="2"></rect>
+            <rect x="29" y="22" width="12" height="12" rx="2"></rect>
+            <path d="M20 18h8M24 14l4 4-4 4M28 30h-8M24 26l-4 4 4 4"></path>
+          </svg>
+        </button>
+        <button id="quick-rotate" class="selection-icon-button rotate-icon"
+          aria-label="${text("rotate")}" title="${text("rotate")}">
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M35 16a14 14 0 1 0 2.5 15"></path>
+            <path d="M35 8v9h-9"></path>
+          </svg>
+        </button>
+        <button id="quick-delete" class="selection-icon-button delete-icon"
+          aria-label="${text("delete")}" title="${text("delete")}">
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M15 17h18l-1.5 22h-15z"></path>
+            <path d="M12 17h24M20 12h8l2 5H18zM21 22v11M27 22v11"></path>
+          </svg>
+        </button>
+      </div>`;
+    $("#quick-rotate").onclick = () => rotate("y");
+    $("#quick-delete").onclick = deleteSelected;
+    mobile?.refreshSelection();
+    return;
+  }
+
   const held = world.held.has(b.id),
     lowerLink = world.lowerConnection(b.id),
     links = world.links.filter((l) => component(b.id, world.links).has(l.a));
@@ -441,7 +491,14 @@ function renderSelection() {
   mobile?.refreshSelection();
 }
 function separate(link: Connection) {
-  if (!selected || !world.links.includes(link) || turning || pressing) return;
+  if (
+    !selected ||
+    isForeignPart(selected) ||
+    !world.links.includes(link) ||
+    turning ||
+    pressing
+  )
+    return;
   endDrag();
   if (!world.detach(link, selected.id)) toast(text("cycle"));
   else {
@@ -462,11 +519,15 @@ function confirmDeleteSelected() {
   const id = pendingDeleteId;
   pendingDeleteId = null;
   $<HTMLDialogElement>("#delete-dialog").close();
-  if (id === null || !world.bricks.some((brick) => brick.id === id)) return;
+  if (id === null) return;
+  const foreign = foreignWorld.get(id);
+  const native = world.bricks.find((brick) => brick.id === id);
+  if (!foreign && !native) return;
   cancelPress();
   endDrag();
   if (selected?.id === id) select(null);
-  world.remove(id);
+  if (foreign) foreignWorld.remove(id);
+  else world.remove(id);
   toast(text("deleted"));
 }
 function cancelDeleteSelected() {
