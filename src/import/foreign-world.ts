@@ -231,7 +231,8 @@ export class ForeignLDrawWorld {
         .setTranslation(center.x, center.y, center.z)
         .setRotation(part.rotation)
         .setFriction(0.58)
-        .setRestitution(0.04),
+        .setRestitution(0.04)
+        .setActiveEvents(R.ActiveEvents.COLLISION_EVENTS),
     );
   }
 
