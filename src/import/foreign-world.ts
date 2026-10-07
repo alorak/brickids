@@ -2,8 +2,10 @@ import * as T from "three";
 import { LDrawLoader } from "three/addons/loaders/LDrawLoader.js";
 import type { ForeignLDrawPartData } from "../ldraw/foreign-types";
 
+// Pin the CDN mirror so imported foreign geometry cannot change underneath a
+// saved brickids scene when the upstream LDraw library updates.
 const LDRAW_LIBRARY =
-  "https://cdn.jsdelivr.net/gh/kulits/ldraw-parts@master/ldraw/";
+  "https://cdn.jsdelivr.net/gh/kulits/ldraw-parts@0eda020f43fe3af7d45444580dd56a9ce0c716ab/ldraw/";
 
 export type ForeignLDrawPart = ForeignLDrawPartData & {
   kind: "foreign";
