@@ -137,7 +137,9 @@ The saved scene is restored on the next launch in the same browser/profile.
 
 The scene menu supports JSON import/export for moving native brickids scenes between browsers or keeping external backups. It also supports **LDraw `.ldr` import and export**.
 
-Current LDraw import is intentionally conservative: the 16 native brickids part mappings are imported with position, rotation, and color; unsupported `.dat` references are skipped and reported instead of aborting the whole file. Direct RGB colors are supported, and a set of common standard LDraw colors is mapped to brickids colors. Imported flat LDR files currently have no reconstructed brick-to-brick joint graph, so physics is switched off after import to preserve the layout. MPD/submodel import is a later step.
+Current LDraw import is intentionally conservative: the 16 native brickids part mappings are imported with position, rotation, and color; unsupported `.dat` references are skipped and reported instead of aborting the whole file. Direct RGB colors are supported, and a set of common standard LDraw colors is mapped to brickids colors.
+
+`.mpd` files and embedded `0 FILE` submodels are supported. Submodel references are recursively flattened, parent/child transforms are composed, and LDraw color `16` inheritance is resolved across nesting levels. Cyclic submodels and excessive nesting are rejected. The flattened import still has no reconstructed brick-to-brick joint graph, so physics is switched off after import to preserve the layout.
 
 LDraw export converts brickids positions, rotations, supported part types, and colors to type-1 part references; the quick palette uses standard LDraw color codes and other colors fall back to direct RGB values.
 
