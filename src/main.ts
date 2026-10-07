@@ -16,7 +16,7 @@ import { exportLDraw } from "./export/ldraw";
 import { importLDraw, type LDrawImportReport } from "./import/ldraw";
 import {
   ForeignLDrawWorld,
-  isValidForeignPartData,
+  isValidForeignPartList,
   type ForeignLDrawPart,
 } from "./import/foreign-world";
 import { setupMobile } from "./mobile";
@@ -797,11 +797,7 @@ function serializeScene() {
 function restoreScene(data: any) {
   const foreign = data?.foreign ?? [];
   const nativeCount = Array.isArray(data?.bricks) ? data.bricks.length : 0;
-  if (
-    !Array.isArray(foreign) ||
-    foreign.some((part) => !isValidForeignPartData(part)) ||
-    nativeCount + foreign.length > 250
-  )
+  if (!isValidForeignPartList(foreign) || nativeCount + foreign.length > 250)
     throw new Error("Invalid scene");
   world.restore(data);
   foreignWorld.restore(foreign);
