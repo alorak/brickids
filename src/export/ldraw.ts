@@ -1,4 +1,5 @@
 import { Quaternion, Vector3 } from "three";
+import type { ForeignLDrawPartData } from "../ldraw/foreign-types";
 
 const LDU_PER_STUD = 20;
 
@@ -13,6 +14,7 @@ type SerializedBrick = {
 export type LDrawScene = {
   version: number;
   bricks: SerializedBrick[];
+  foreign?: ForeignLDrawPartData[];
 };
 
 type LDrawPart = {
@@ -150,6 +152,37 @@ export function brickToLDrawLine(brick: SerializedBrick) {
   ].join(" ");
 }
 
+export function foreignToLDrawLine(part: ForeignLDrawPartData) {
+  if (
+    part.p.length !== 3 ||
+    part.q.length !== 4 ||
+    !part.file ||
+    part.file.includes("..") ||
+    /^[a-z]+:/i.test(part.file)
+  )
+    throw new Error("Invalid foreign LDraw part");
+
+  const position = ldrawVector(new Vector3().fromArray(part.p));
+  const rotation = new Quaternion().fromArray(part.q);
+  if (rotation.lengthSq() < 1e-12) throw new Error("Invalid foreign rotation");
+  rotation.normalize();
+
+  const color =
+    /^(?:\d+|0x2[0-9a-f]{6})$/i.test(part.colorToken)
+      ? part.colorToken
+      : ldrawColor(part.color);
+
+  return [
+    "1",
+    color,
+    clean(position.x),
+    clean(position.y),
+    clean(position.z),
+    ...matrixFor(rotation).map(clean),
+    part.file,
+  ].join(" ");
+}
+
 export function exportLDraw(scene: LDrawScene) {
   if (scene.version !== 1 || !Array.isArray(scene.bricks))
     throw new Error("Unsupported brickids scene");
@@ -162,6 +195,7 @@ export function exportLDraw(scene: LDrawScene) {
     "0 // 1 stud = 20 LDU; brickids +Y is converted to LDraw -Y",
     "0",
     ...scene.bricks.map(brickToLDrawLine),
+    ...(scene.foreign ?? []).map(foreignToLDrawLine),
     "0",
   ];
   return lines.join("\r\n");
