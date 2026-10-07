@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { Quaternion, Vector3 } from "three";
+import { Quaternion, Scene, Vector3 } from "three";
 import { exportLDraw, ldrawParts } from "../src/export/ldraw.ts";
 import { importLDraw } from "../src/import/ldraw.ts";
+import { BrickWorld } from "../src/engine/world.ts";
 
 function sameQuaternion(a: number[], b: number[], tolerance = 1e-5) {
   const qa = new Quaternion().fromArray(a).normalize();
@@ -89,6 +90,32 @@ test("reconstructs a strict stud/socket connection after LDraw import", () => {
 
   assert.equal(result.reconstructedConnections, 1);
   assert.deepEqual(result.scene.links, [{ a: 2, b: 1, studs: 4 }]);
+});
+
+test("BrickWorld restore accepts reconstructed LDraw links and keeps the stack joined", async () => {
+  const result = importLDraw(
+    exportLDraw({
+      version: 1,
+      bricks: [
+        { id: 1, spec: "2x2", color: "#C91A09", p: [0, 0.6, 0], q: [0, 0, 0, 1] },
+        { id: 2, spec: "2x2", color: "#0055BF", p: [0, 1.8, 0], q: [0, 0, 0, 1] },
+      ],
+    }),
+  );
+  const world = new BrickWorld(new Scene(), () => {});
+  await world.init();
+  world.restore(result.scene);
+
+  assert.equal(world.links.length, 1);
+  assert.deepEqual(
+    world.serialize().links.map(({ a, b, studs }) => ({ a, b, studs })),
+    [{ a: 2, b: 1, studs: 4 }],
+  );
+
+  for (let i = 0; i < 120; i++) world.step();
+  assert.equal(world.links.length, 1);
+  assert.ok(Math.abs(world.bricks[1].position.y - world.bricks[0].position.y - 1.2) < 0.05);
+  world.world.free();
 });
 
 test("reconstructs multiple supports for one wide imported brick", () => {
