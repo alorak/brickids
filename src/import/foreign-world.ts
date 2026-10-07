@@ -13,7 +13,7 @@ export type ForeignLDrawPart = ForeignLDrawPartData & {
   loaded: boolean;
 };
 
-function validData(data: ForeignLDrawPartData) {
+export function isValidForeignPartData(data: ForeignLDrawPartData) {
   return (
     Number.isSafeInteger(data.id) &&
     data.id < 0 &&
@@ -143,7 +143,7 @@ export class ForeignLDrawWorld {
   }
 
   add(data: ForeignLDrawPartData) {
-    if (!validData(data) || this.get(data.id)) throw new Error("Invalid foreign LDraw part");
+    if (!isValidForeignPartData(data) || this.get(data.id)) throw new Error("Invalid foreign LDraw part");
     const rotation = new T.Quaternion().fromArray(data.q);
     if (rotation.lengthSq() < 1e-12) throw new Error("Invalid foreign rotation");
     rotation.normalize();
@@ -203,7 +203,7 @@ export class ForeignLDrawWorld {
 
   restore(value: unknown) {
     const data = value === undefined ? [] : value;
-    if (!Array.isArray(data) || data.length > 250 || !data.every(validData))
+    if (!Array.isArray(data) || data.length > 250 || !data.every(isValidForeignPartData))
       throw new Error("Invalid foreign LDraw scene");
     const ids = new Set<number>();
     for (const part of data as ForeignLDrawPartData[]) {
