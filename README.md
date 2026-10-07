@@ -139,7 +139,9 @@ The scene menu supports JSON import/export for moving native brickids scenes bet
 
 Current LDraw import is intentionally conservative: the **30 native brickids part mappings** are imported with position, rotation, and color; unsupported `.dat` references are skipped and reported instead of aborting the whole file. Common rectangular brick/plate families now include 1×1, 1×3, 1×6, 1×8, 2×3, 2×6, and 2×8 in addition to the original sizes. Direct RGB colors are supported, and a set of common standard LDraw colors is mapped to brickids colors.
 
-`.mpd` files and embedded `0 FILE` submodels are supported. Submodel references are recursively flattened, parent/child transforms are composed, and LDraw color `16` inheritance is resolved across nesting levels. Cyclic submodels and excessive nesting are rejected. The flattened import still has no reconstructed brick-to-brick joint graph, so physics is switched off after import to preserve the layout.
+`.mpd` files and embedded `0 FILE` submodels are supported. Submodel references are recursively flattened, parent/child transforms are composed, and LDraw color `16` inheritance is resolved across nesting levels. Cyclic submodels and excessive nesting are rejected.
+
+After flattening, brickids now reconstructs the **native stud/socket connection graph** for supported parts. It reuses the same strict mating rules as normal brickids connections and only creates a joint when the imported transform is already on a valid connector pose; nearby or almost-aligned parts are not magnetically corrected during import. Multi-support connections are preserved, so a wide brick can reconnect to more than one support. The user's current physics setting is kept instead of being forced off after import.
 
 LDraw export converts brickids positions, rotations, supported part types, and colors to type-1 part references; the quick palette uses standard LDraw color codes and other colors fall back to direct RGB values.
 

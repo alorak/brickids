@@ -1,5 +1,6 @@
 import { Matrix3, Matrix4, Quaternion, Vector3 } from "three";
 import { ldrawParts } from "../export/ldraw";
+import { reconstructConnections, type ReconstructedLink } from "./reconstruct-connections";
 
 const LDU_PER_STUD = 20;
 const MAX_SUBMODEL_DEPTH = 32;
@@ -44,7 +45,7 @@ export type ImportedLDrawScene = {
     p: number[];
     q: number[];
   }>;
-  links: [];
+  links: ReconstructedLink[];
 };
 
 export type LDrawImportReport = {
@@ -56,6 +57,8 @@ export type LDrawImportReport = {
   ignoredGeometryLines: number;
   submodels: number;
   maxDepth: number;
+  reconstructedConnections: number;
+  connectionCandidatePairs: number;
 };
 
 type Type1Reference = {
@@ -397,8 +400,10 @@ export function importLDraw(source: string): LDrawImportReport {
   if (!bricks.length && unsupportedParts.size === 0)
     throw new Error("No LDraw parts found");
 
+  const reconstruction = reconstructConnections(bricks);
+
   return {
-    scene: { version: 1, bricks, links: [] },
+    scene: { version: 1, bricks, links: reconstruction.links },
     imported: bricks.length,
     skipped,
     unsupportedParts: [...unsupportedParts].sort(),
@@ -406,5 +411,7 @@ export function importLDraw(source: string): LDrawImportReport {
     ignoredGeometryLines: flattened.ignoredGeometryLines,
     submodels: flattened.submodels,
     maxDepth: flattened.maxDepth,
+    reconstructedConnections: reconstruction.links.length,
+    connectionCandidatePairs: reconstruction.candidatePairs,
   };
 }

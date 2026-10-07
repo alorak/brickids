@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { Quaternion, Vector3 } from "three";
+import { Quaternion, Scene, Vector3 } from "three";
 import { exportLDraw, ldrawParts } from "../src/export/ldraw.ts";
 import { importLDraw } from "../src/import/ldraw.ts";
+import { BrickWorld } from "../src/engine/world.ts";
 
 function sameQuaternion(a: number[], b: number[], tolerance = 1e-5) {
   const qa = new Quaternion().fromArray(a).normalize();
@@ -75,6 +76,135 @@ test("imports newly native common brick and plate families", () => {
     result.scene.bricks.map((brick) => brick.spec),
     ["1x1", "plate-1x1", "2x8", "plate-2x8"],
   );
+});
+
+test("reconstructs a strict stud/socket connection after LDraw import", () => {
+  const output = exportLDraw({
+    version: 1,
+    bricks: [
+      { id: 1, spec: "2x2", color: "#C91A09", p: [0, 0.6, 0], q: [0, 0, 0, 1] },
+      { id: 2, spec: "2x4", color: "#0055BF", p: [0, 1.8, 0], q: [0, 0, 0, 1] },
+    ],
+  });
+  const result = importLDraw(output);
+
+  assert.equal(result.reconstructedConnections, 1);
+  assert.deepEqual(result.scene.links, [{ a: 2, b: 1, studs: 4 }]);
+});
+
+test("BrickWorld restore accepts reconstructed LDraw links and keeps the stack joined", async () => {
+  const result = importLDraw(
+    exportLDraw({
+      version: 1,
+      bricks: [
+        { id: 1, spec: "2x2", color: "#C91A09", p: [0, 0.6, 0], q: [0, 0, 0, 1] },
+        { id: 2, spec: "2x2", color: "#0055BF", p: [0, 1.8, 0], q: [0, 0, 0, 1] },
+      ],
+    }),
+  );
+  const world = new BrickWorld(new Scene(), () => {});
+  await world.init();
+  world.restore(result.scene);
+
+  assert.equal(world.links.length, 1);
+  assert.deepEqual(
+    world.serialize().links.map(({ a, b, studs }) => ({ a, b, studs })),
+    [{ a: 2, b: 1, studs: 4 }],
+  );
+
+  for (let i = 0; i < 120; i++) world.step();
+  assert.equal(world.links.length, 1);
+  assert.ok(Math.abs(world.bricks[1].position.y - world.bricks[0].position.y - 1.2) < 0.05);
+  world.world.free();
+});
+
+test("reconstructs a connection when the whole imported assembly is rotated in 3D", () => {
+  const rotation = new Quaternion()
+    .setFromAxisAngle(new Vector3(0, 0, 1), 0.7)
+    .multiply(
+      new Quaternion().setFromAxisAngle(
+        new Vector3(0, 1, 0),
+        Math.PI / 2,
+      ),
+    )
+    .normalize();
+  const lower = new Vector3(0, 0.6, 0).applyQuaternion(rotation);
+  const upper = new Vector3(0, 1.8, 0).applyQuaternion(rotation);
+  const q = rotation.toArray();
+
+  const result = importLDraw(
+    exportLDraw({
+      version: 1,
+      bricks: [
+        { id: 1, spec: "2x2", color: "#C91A09", p: lower.toArray(), q },
+        { id: 2, spec: "2x2", color: "#0055BF", p: upper.toArray(), q },
+      ],
+    }),
+  );
+
+  assert.equal(result.reconstructedConnections, 1);
+  assert.deepEqual(result.scene.links, [{ a: 2, b: 1, studs: 4 }]);
+});
+
+test("reconstructs multiple supports for one wide imported brick", () => {
+  const output = exportLDraw({
+    version: 1,
+    bricks: [
+      { id: 1, spec: "2x2", color: "#C91A09", p: [-1, 0.6, 0], q: [0, 0, 0, 1] },
+      { id: 2, spec: "2x2", color: "#F2CD37", p: [1, 0.6, 0], q: [0, 0, 0, 1] },
+      { id: 3, spec: "2x4", color: "#0055BF", p: [0, 1.8, 0], q: [0, 0, 0, 1] },
+    ],
+  });
+  const result = importLDraw(output);
+
+  assert.equal(result.reconstructedConnections, 2);
+  assert.deepEqual(result.scene.links, [
+    { a: 3, b: 1, studs: 4 },
+    { a: 3, b: 2, studs: 4 },
+  ]);
+});
+
+test("does not reconstruct a connection for a near-miss placement", () => {
+  const output = exportLDraw({
+    version: 1,
+    bricks: [
+      { id: 1, spec: "2x2", color: "#C91A09", p: [0, 0.6, 0], q: [0, 0, 0, 1] },
+      { id: 2, spec: "2x2", color: "#0055BF", p: [0.1, 1.8, 0], q: [0, 0, 0, 1] },
+    ],
+  });
+  const result = importLDraw(output);
+
+  assert.equal(result.reconstructedConnections, 0);
+  assert.deepEqual(result.scene.links, []);
+});
+
+test("does not connect a brick on top of a smooth tile", () => {
+  const output = exportLDraw({
+    version: 1,
+    bricks: [
+      { id: 1, spec: "tile-2x2", color: "#C91A09", p: [0, 0.2, 0], q: [0, 0, 0, 1] },
+      { id: 2, spec: "2x2", color: "#0055BF", p: [0, 1.0, 0], q: [0, 0, 0, 1] },
+    ],
+  });
+  const result = importLDraw(output);
+
+  assert.equal(result.reconstructedConnections, 0);
+});
+
+test("reconstructs connections through flattened MPD submodels", () => {
+  const result = importLDraw([
+    "0 FILE main.ldr",
+    "1 4 0 0 0 1 0 0 0 1 0 0 0 1 lower.ldr",
+    "1 1 0 -24 0 1 0 0 0 1 0 0 0 1 upper.ldr",
+    "0 FILE lower.ldr",
+    "1 16 0 -24 0 1 0 0 0 1 0 0 0 1 3003.dat",
+    "0 FILE upper.ldr",
+    "1 16 0 -24 0 1 0 0 0 1 0 0 0 1 3003.dat",
+  ].join("\n"));
+
+  assert.equal(result.imported, 2);
+  assert.equal(result.reconstructedConnections, 1);
+  assert.deepEqual(result.scene.links, [{ a: 2, b: 1, studs: 4 }]);
 });
 
 test("keeps unknown colors visible and reports them", () => {
