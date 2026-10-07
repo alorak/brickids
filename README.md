@@ -141,7 +141,9 @@ Current LDraw import has two layers. The **30 native brickids part mappings** ar
 
 `.mpd` files and embedded `0 FILE` submodels are supported. Submodel references are recursively flattened, parent/child transforms are composed, and LDraw color `16` inheritance is resolved across nesting levels. Cyclic submodels and excessive nesting are rejected.
 
-Foreign parts are selectable, draggable, rotatable, deletable, persisted in localStorage/JSON scene saves, and written back to LDraw export with their original `.dat` reference and color token. They intentionally do **not** participate in physics, collision, snapping, or connector reconstruction yet; that is the next layer of work.
+Foreign parts are selectable, draggable, rotatable, deletable, persisted in localStorage/JSON scene saves, and written back to LDraw export with their original `.dat` reference and color token.
+
+Foreign parts now also get a **basic Rapier cuboid collider**. Before the official LDraw mesh loads, the visible placeholder uses a small fallback box; once the mesh is available, the collider is rebuilt from the mesh's local bounding box. These standalone colliders act as coarse obstacles for native physics and Rapier scene queries, but foreign parts themselves still have no gravity/body, automatic drop, snapping, or connector reconstruction. Concave openings and detailed contours are intentionally approximated by the bounding box.
 
 After flattening, brickids now reconstructs the **native stud/socket connection graph** for supported parts. It reuses the same strict mating rules as normal brickids connections and only creates a joint when the imported transform is already on a valid connector pose; nearby or almost-aligned parts are not magnetically corrected during import. Multi-support connections are preserved, so a wide brick can reconnect to more than one support. The user's current physics setting is kept instead of being forced off after import.
 
