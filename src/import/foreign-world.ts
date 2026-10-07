@@ -1,5 +1,6 @@
 import * as T from "three";
 import { LDrawLoader } from "three/addons/loaders/LDrawLoader.js";
+import { LDrawConditionalLineMaterial } from "three/addons/materials/LDrawConditionalLineMaterial.js";
 import type { ForeignLDrawPartData } from "../ldraw/foreign-types";
 
 // Pin the CDN mirror so imported foreign geometry cannot change underneath a
@@ -81,7 +82,7 @@ function placeholder(color: string) {
 }
 
 function setMainColor(loader: LDrawLoader, color: string) {
-  for (const material of [loader.getMainMaterial(), loader.getMainEdgeMaterial()]) {
+  for (const material of [loader.getMaterial("16"), loader.getMaterial("24")]) {
     const candidate = material as (T.Material & { color?: T.Color }) | null;
     if (candidate?.color instanceof T.Color) candidate.color.set(color);
   }
@@ -122,6 +123,7 @@ export class ForeignLDrawWorld {
     if (!cached) {
       cached = (async () => {
         const loader = new LDrawLoader();
+        loader.setConditionalLineMaterial(LDrawConditionalLineMaterial);
         loader.setPartsLibraryPath(LDRAW_LIBRARY);
         try {
           await loader.preloadMaterials(`${LDRAW_LIBRARY}LDConfig.ldr`);
