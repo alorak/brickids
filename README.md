@@ -135,7 +135,7 @@ The saved scene is restored on the next launch in the same browser/profile.
 
 ### File import / export
 
-The scene menu also supports JSON import and export for moving builds between browsers or keeping external backups.
+The scene menu supports JSON import/export for moving native brickids scenes between browsers or keeping external backups. It also supports **LDraw `.ldr` export** for opening the build in LDraw-compatible tools. brickids positions, rotations, supported part types, and colors are converted to LDraw type-1 part references; the quick palette uses standard LDraw color codes and other colors fall back to direct RGB values.
 
 Language and the selected Other color are also remembered locally.
 
