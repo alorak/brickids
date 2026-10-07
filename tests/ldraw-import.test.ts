@@ -169,6 +169,23 @@ test("rejects cyclic MPD submodel references", () => {
   );
 });
 
+test("rejects excessively deep MPD nesting", () => {
+  const lines: string[] = [];
+  for (let i = 0; i < 34; i++) {
+    lines.push(`0 FILE level-${i}.ldr`);
+    if (i < 33)
+      lines.push(
+        `1 16 0 0 0 1 0 0 0 1 0 0 0 1 level-${i + 1}.ldr`,
+      );
+    else
+      lines.push("1 4 0 -24 0 1 0 0 0 1 0 0 0 1 3004.dat");
+  }
+  assert.throws(
+    () => importLDraw(lines.join("\n")),
+    /submodel nesting is too deep/,
+  );
+});
+
 test("rejects scaled or mirrored part transforms for now", () => {
   const result = importLDraw(
     "1 4 0 -24 0 -1 0 0 0 1 0 0 0 1 3004.dat",
