@@ -14,6 +14,11 @@ import { component } from "./engine/connections";
 import { messages, type Language } from "./i18n";
 import { exportLDraw } from "./export/ldraw";
 import { importLDraw, type LDrawImportReport } from "./import/ldraw";
+import {
+  ForeignLDrawWorld,
+  isValidForeignPartData,
+  type ForeignLDrawPart,
+} from "./import/foreign-world";
 import { setupMobile } from "./mobile";
 import type { TouchPoint } from "./input/touch";
 import "./style.css";
@@ -109,7 +114,11 @@ const applyGround = groundController(
 applyGround("baseplate");
 
 const world = new BrickWorld(scene, (v) => audio.play(v));
-let selected: Brick | null = null,
+const foreignWorld = new ForeignLDrawWorld(scene);
+type SelectablePart = Brick | ForeignLDrawPart;
+const isForeignPart = (part: SelectablePart | null): part is ForeignLDrawPart =>
+  part?.kind === "foreign";
+let selected: SelectablePart | null = null,
   currentColor = colors[0],
   panelOpen = true,
   toastTimer = 0,
