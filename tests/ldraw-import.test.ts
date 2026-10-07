@@ -249,6 +249,21 @@ test("imports a foreign-only LDraw file instead of rejecting it", () => {
   assert.equal(result.scene.foreign[0].file, "3006.dat");
 });
 
+test("foreign LDraw references survive import-export round trip", () => {
+  const source =
+    "1 0x2123ABC 40 -48 -20 0 0 1 0 1 0 -1 0 0 3006.dat";
+  const imported = importLDraw(source);
+  const exported = exportLDraw(imported.scene);
+  const type1 = exported
+    .split("\r\n")
+    .find((line) => line.startsWith("1 0x2123ABC"));
+
+  assert.equal(
+    type1,
+    "1 0x2123ABC 40 -48 -20 0 0 1 0 1 0 -1 0 0 3006.dat",
+  );
+});
+
 test("imports an MPD submodel and inherits its parent color", () => {
   const result = importLDraw([
     "0 FILE main.ldr",
