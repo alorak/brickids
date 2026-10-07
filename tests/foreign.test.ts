@@ -30,6 +30,10 @@ test("foreign LDraw data validation rejects unsafe paths and duplicate IDs", () 
     isValidForeignPartData({ ...sample, file: "3006.dat\n1 4 0 0 0" }),
     false,
   );
+  assert.equal(
+    isValidForeignPartData({ ...sample, q: [0, 0, 0, 0] }),
+    false,
+  );
   assert.equal(isValidForeignPartList([sample, sample]), false);
 });
 
