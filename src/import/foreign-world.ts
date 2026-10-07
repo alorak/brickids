@@ -1,3 +1,4 @@
+import R from "@dimforge/rapier3d-compat";
 import * as T from "three";
 import type { LDrawLoader } from "three/addons/loaders/LDrawLoader.js";
 import type { ForeignLDrawPartData } from "../ldraw/foreign-types";
@@ -13,6 +14,11 @@ export type ForeignLDrawPart = ForeignLDrawPartData & {
   rotation: T.Quaternion;
   object: T.Group;
   loaded: boolean;
+  /** Coarse standalone Rapier collider; no foreign gravity/body yet. */
+  collider?: R.Collider;
+  colliderCenter: T.Vector3;
+  colliderHalf: T.Vector3;
+  colliderFromGeometry: boolean;
 };
 
 export function isValidForeignPartData(data: ForeignLDrawPartData) {
@@ -119,12 +125,48 @@ function prepareVisual(group: T.Group) {
       object.receiveShadow = true;
     }
   });
+  group.updateMatrixWorld(true);
   return group;
+}
+
+const FALLBACK_BOUNDS = new T.Box3(
+  new T.Vector3(-0.45, -0.3, -0.45),
+  new T.Vector3(0.45, 0.3, 0.45),
+);
+const MIN_COLLIDER_HALF = 0.035;
+const MAX_COLLIDER_HALF = 32;
+const COLLIDER_INSET = 0.01;
+
+function visualBounds(group: T.Group) {
+  const box = new T.Box3().setFromObject(group, true);
+  if (box.isEmpty()) return FALLBACK_BOUNDS.clone();
+  const values = [...box.min.toArray(), ...box.max.toArray()];
+  if (!values.every(Number.isFinite)) return FALLBACK_BOUNDS.clone();
+  return box;
+}
+
+function colliderShape(box: T.Box3) {
+  const center = box.getCenter(new T.Vector3());
+  const half = box
+    .getSize(new T.Vector3())
+    .multiplyScalar(0.5)
+    .subScalar(COLLIDER_INSET);
+  for (const axis of ["x", "y", "z"] as const)
+    half[axis] = T.MathUtils.clamp(
+      half[axis],
+      MIN_COLLIDER_HALF,
+      MAX_COLLIDER_HALF,
+    );
+  return { center, half };
 }
 
 export class ForeignLDrawWorld {
   readonly parts: ForeignLDrawPart[] = [];
-  private visualCache = new Map<string, Promise<T.Group>>();
+  private visualCache = new Map<
+    string,
+    Promise<{ group: T.Group; bounds: T.Box3 }>
+  >();
+  private physicsWorld?: R.World;
 
   constructor(
     private scene: T.Scene,
@@ -137,6 +179,61 @@ export class ForeignLDrawWorld {
 
   pickObjects() {
     return this.parts.map((part) => part.object);
+  }
+
+  attachPhysics(world: R.World) {
+    if (this.physicsWorld === world) return;
+    if (this.physicsWorld) {
+      for (const part of this.parts)
+        if (part.collider) {
+          this.physicsWorld.removeCollider(part.collider, true);
+          part.collider = undefined;
+        }
+    }
+    this.physicsWorld = world;
+    for (const part of this.parts) this.rebuildCollider(part);
+  }
+
+  private colliderPose(part: ForeignLDrawPart) {
+    return part.colliderCenter
+      .clone()
+      .applyQuaternion(part.rotation)
+      .add(part.position);
+  }
+
+  private syncCollider(part: ForeignLDrawPart) {
+    if (!part.collider) return;
+    const center = this.colliderPose(part);
+    part.collider.setTranslation(center);
+    part.collider.setRotation(part.rotation);
+  }
+
+  private rebuildCollider(
+    part: ForeignLDrawPart,
+    box?: T.Box3,
+    fromGeometry = false,
+  ) {
+    if (box) {
+      const shape = colliderShape(box);
+      part.colliderCenter.copy(shape.center);
+      part.colliderHalf.copy(shape.half);
+      part.colliderFromGeometry = fromGeometry;
+    }
+    if (!this.physicsWorld) return;
+    if (part.collider) this.physicsWorld.removeCollider(part.collider, true);
+    const center = this.colliderPose(part);
+    part.collider = this.physicsWorld.createCollider(
+      R.ColliderDesc.cuboid(
+        part.colliderHalf.x,
+        part.colliderHalf.y,
+        part.colliderHalf.z,
+      )
+        .setTranslation(center.x, center.y, center.z)
+        .setRotation(part.rotation)
+        .setFriction(0.58)
+        .setRestitution(0.04)
+        .setActiveEvents(R.ActiveEvents.COLLISION_EVENTS),
+    );
   }
 
   private async template(file: string, color: string) {
@@ -163,9 +260,11 @@ export class ForeignLDrawWorld {
           .split("/")
           .map((segment) => encodeURIComponent(segment))
           .join("/");
-        const group = await loader.loadAsync(`${LDRAW_LIBRARY}${path}`);
+        const group = prepareVisual(
+          await loader.loadAsync(`${LDRAW_LIBRARY}${path}`),
+        );
         setMainColor(loader, color);
-        return prepareVisual(group);
+        return { group, bounds: visualBounds(group) };
       })();
       this.visualCache.set(key, cached);
       cached.catch(() => this.visualCache.delete(key));
@@ -179,8 +278,9 @@ export class ForeignLDrawWorld {
       if (!this.parts.includes(part)) return;
       disposePlaceholder(part.object);
       part.object.clear();
-      part.object.add(template.clone(true));
+      part.object.add(template.group.clone(true));
       part.loaded = true;
+      this.rebuildCollider(part, template.bounds, true);
     } catch {
       // The placeholder intentionally remains. The original .dat reference and
       // transform are still preserved for editing and re-export.
@@ -204,6 +304,9 @@ export class ForeignLDrawWorld {
       rotation,
       object: root,
       loaded: false,
+      colliderCenter: new T.Vector3(),
+      colliderHalf: new T.Vector3(0.45, 0.3, 0.45),
+      colliderFromGeometry: false,
     };
     root.position.copy(part.position);
     root.quaternion.copy(part.rotation);
@@ -211,6 +314,7 @@ export class ForeignLDrawWorld {
     root.add(placeholder(part.color));
     this.scene.add(root);
     this.parts.push(part);
+    this.rebuildCollider(part, FALLBACK_BOUNDS, false);
     if (this.loadVisuals) void this.hydrate(part);
     return part;
   }
@@ -222,6 +326,7 @@ export class ForeignLDrawWorld {
     if (rotation) part.rotation.copy(rotation).normalize();
     part.object.position.copy(part.position);
     part.object.quaternion.copy(part.rotation);
+    this.syncCollider(part);
     return true;
   }
 
@@ -229,6 +334,10 @@ export class ForeignLDrawWorld {
     const part = this.get(id);
     if (!part) return;
     disposePlaceholder(part.object);
+    if (part.collider && this.physicsWorld) {
+      this.physicsWorld.removeCollider(part.collider, true);
+      part.collider = undefined;
+    }
     this.scene.remove(part.object);
     this.parts.splice(this.parts.indexOf(part), 1);
   }

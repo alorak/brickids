@@ -1526,6 +1526,9 @@ function frame(now: number) {
 world
   .init()
   .then(() => {
+    // Foreign parts share Rapier's world as standalone coarse colliders. They
+    // block native physics without becoming dynamic bodies themselves.
+    foreignWorld.attachPhysics(world.world);
     // Physics is opt-in: scenes always open in the stable editing mode.
     world.setPhysicsEnabled(false);
     renderPhysicsButton();
