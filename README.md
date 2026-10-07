@@ -137,9 +137,11 @@ The saved scene is restored on the next launch in the same browser/profile.
 
 The scene menu supports JSON import/export for moving native brickids scenes between browsers or keeping external backups. It also supports **LDraw `.ldr` import and export**.
 
-Current LDraw import is intentionally conservative: the **30 native brickids part mappings** are imported with position, rotation, and color; unsupported `.dat` references are skipped and reported instead of aborting the whole file. Common rectangular brick/plate families now include 1×1, 1×3, 1×6, 1×8, 2×3, 2×6, and 2×8 in addition to the original sizes. Direct RGB colors are supported, and a set of common standard LDraw colors is mapped to brickids colors.
+Current LDraw import has two layers. The **30 native brickids part mappings** are imported with full brickids behavior; common rectangular brick/plate families include 1×1, 1×3, 1×6, 1×8, 2×3, 2×6, and 2×8 in addition to the original sizes. Rigid LDraw references that are not native are now preserved as **foreign parts** instead of being dropped. Their official LDraw geometry is loaded from a pinned CDN mirror when available; if loading fails or the app is offline, a visible placeholder remains so the reference is never silently lost. Direct RGB colors are supported, and a set of common standard LDraw colors is mapped to brickids colors.
 
 `.mpd` files and embedded `0 FILE` submodels are supported. Submodel references are recursively flattened, parent/child transforms are composed, and LDraw color `16` inheritance is resolved across nesting levels. Cyclic submodels and excessive nesting are rejected.
+
+Foreign parts are selectable, draggable, rotatable, deletable, persisted in localStorage/JSON scene saves, and written back to LDraw export with their original `.dat` reference and color token. They intentionally do **not** participate in physics, collision, snapping, or connector reconstruction yet; that is the next layer of work.
 
 After flattening, brickids now reconstructs the **native stud/socket connection graph** for supported parts. It reuses the same strict mating rules as normal brickids connections and only creates a joint when the imported transform is already on a valid connector pose; nearby or almost-aligned parts are not magnetically corrected during import. Multi-support connections are preserved, so a wide brick can reconnect to more than one support. The user's current physics setting is kept instead of being forced off after import.
 
