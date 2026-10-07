@@ -787,8 +787,26 @@ $("#physics").onclick = () => {
   renderPhysicsButton();
   dirty = true;
 };
+function serializeScene() {
+  return {
+    ...world.serialize(),
+    foreign: foreignWorld.serialize(),
+  };
+}
+function restoreScene(data: any) {
+  const foreign = data?.foreign ?? [];
+  const nativeCount = Array.isArray(data?.bricks) ? data.bricks.length : 0;
+  if (
+    !Array.isArray(foreign) ||
+    foreign.some((part) => !isValidForeignPartData(part)) ||
+    nativeCount + foreign.length > 250
+  )
+    throw new Error("Invalid scene");
+  world.restore(data);
+  foreignWorld.restore(foreign);
+}
 function saveSceneLocal() {
-  localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(world.serialize()));
+  localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(serializeScene()));
   toast(text("savedLocal"));
   $<HTMLDialogElement>("#scene-dialog").close();
 }
@@ -809,7 +827,7 @@ function downloadSceneFile(content: string, type: string, filename: string) {
 }
 $("#scene-export").onclick = () => {
   downloadSceneFile(
-    JSON.stringify(world.serialize(), null, 2),
+    JSON.stringify(serializeScene(), null, 2),
     "application/json",
     "brickids-scene.json",
   );
@@ -818,7 +836,7 @@ $("#scene-export").onclick = () => {
 $("#scene-export-ldr").onclick = () => {
   try {
     downloadSceneFile(
-      exportLDraw(world.serialize()),
+      exportLDraw(serializeScene()),
       "text/plain;charset=utf-8",
       "brickids-scene.ldr",
     );
@@ -868,18 +886,19 @@ $("#file").onchange = async () => {
 
     if (isLDraw) {
       const report = importLDraw(source);
-      if (!report.imported) throw Error("No supported LDraw parts");
+      if (!report.imported && !report.preservedForeign)
+        throw Error("No importable LDraw parts");
       // LDraw/MPD stores transforms rather than application joints. The
       // importer reconstructs strict native stud/socket links before restore,
       // so the user's current physics setting can be preserved.
-      world.restore(report.scene);
+      restoreScene(report.scene);
       select(null);
-      localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(world.serialize()));
+      localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(serializeScene()));
       toast(ldrawImportMessage(report));
     } else {
-      world.restore(JSON.parse(source));
+      restoreScene(JSON.parse(source));
       select(null);
-      localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(world.serialize()));
+      localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(serializeScene()));
       toast(text("loaded"));
     }
     $<HTMLDialogElement>("#scene-dialog").close();
@@ -893,6 +912,7 @@ $("#scene-new").onclick = () => {
   cancelInteraction();
   cancelPress();
   world.clear();
+  foreignWorld.clear();
   select(null);
   localStorage.removeItem(SAVED_SCENE_KEY);
   $<HTMLDialogElement>("#scene-dialog").close();
@@ -903,6 +923,7 @@ $("#demo").onclick = () => {
   cancelInteraction();
   cancelPress();
   world.clear();
+  foreignWorld.clear();
   const lower = world.add(catalog[2], colors[2], new T.Vector3(0, 0.6, 0));
   const upper = world.add(catalog[1], colors[0], new T.Vector3(0, 2.2, 0));
   world.grab(upper.id);
@@ -1467,7 +1488,7 @@ world
     const saved = localStorage.getItem(SAVED_SCENE_KEY);
     if (saved) {
       try {
-        world.restore(JSON.parse(saved));
+        restoreScene(JSON.parse(saved));
       } catch {
         localStorage.removeItem(SAVED_SCENE_KEY);
         starter();
