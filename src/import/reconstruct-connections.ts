@@ -69,17 +69,17 @@ export function reconstructConnections(
       const first = poses[i],
         second = poses[j];
 
-      // Fast vertical/centre rejection. mating() remains the authority; this
-      // only avoids expensive connector comparisons for obviously distant parts.
-      const reach =
-        (first.spec.height + second.spec.height) / 2 + 0.08;
-      const centreDistance = first.position.distanceTo(second.position);
-      const horizontalReach =
-        Math.hypot(
-          (first.spec.cols + second.spec.cols) / 2,
-          (first.spec.rows + second.spec.rows) / 2,
-        ) + 0.25;
-      if (centreDistance > Math.hypot(horizontalReach, reach) + 0.1) continue;
+      // Rotation-safe broad-phase rejection. The circumscribed radius stays
+      // valid even when an imported MPD rotates a whole assembly off-axis.
+      const firstRadius =
+          Math.hypot(first.spec.cols, first.spec.rows, first.spec.height) / 2,
+        secondRadius =
+          Math.hypot(second.spec.cols, second.spec.rows, second.spec.height) / 2;
+      if (
+        first.position.distanceTo(second.position) >
+        firstRadius + secondRadius + 0.3
+      )
+        continue;
 
       candidatePairs++;
       const firstOnSecond = strictContact(first, second);
