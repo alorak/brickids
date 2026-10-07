@@ -141,7 +141,9 @@ LDraw import artık iki katmanlıdır. Brickids'in mevcut **30 native parça eş
 
 `.mpd` dosyaları ve gömülü `0 FILE` submodel'leri desteklenir. Submodel referansları recursive olarak flatten edilir, parent/child transformları birleştirilir ve LDraw renk `16` kalıtımı iç içe seviyelerde çözülür. Döngüsel submodel referansları ve aşırı derin iç içe yapılar reddedilir.
 
-Foreign parçalar seçilebilir, sürüklenebilir, döndürülebilir ve silinebilir; localStorage/JSON sahne kayıtlarında korunur ve LDraw export sırasında özgün `.dat` referansı ile renk token'ı yeniden yazılır. Bu aşamada foreign parçalar bilinçli olarak fizik, collision, snap veya connector reconstruction sistemine katılmaz; bu sonraki geliştirme katmanıdır.
+Foreign parçalar seçilebilir, sürüklenebilir, döndürülebilir ve silinebilir; localStorage/JSON sahne kayıtlarında korunur ve LDraw export sırasında özgün `.dat` referansı ile renk token'ı yeniden yazılır.
+
+Foreign parçalar artık **basic Rapier cuboid collider** da alır. Resmî LDraw mesh'i yüklenmeden önce görünür placeholder için küçük bir fallback kutu kullanılır; mesh geldiğinde collider, mesh'in yerel bounding box'ına göre yeniden oluşturulur. Bu standalone collider'lar native fizik ve Rapier scene query'leri için kaba bir engel görevi görür; ancak foreign parçanın kendisinde henüz gravity/body, otomatik drop, snap veya connector reconstruction yoktur. Delik ve oyuk gibi konkav ayrıntılar bilinçli olarak bounding box ile yaklaşık temsil edilir.
 
 Flatten işleminden sonra desteklenen native parçalar için **stud/socket bağlantı grafiği yeniden oluşturulur**. Bunun için normal brickids bağlantılarında kullanılan strict `mating` kuralları aynen kullanılır; yalnızca imported transform zaten geçerli connector pozundaysa joint oluşturulur, yakın veya neredeyse hizalı parçalar import sırasında zorla snap edilmez. Geniş bir parçanın birden fazla desteğe oturduğu durumlarda tüm geçerli bağlantılar korunur. Import sonrasında fizik artık zorla kapatılmaz; kullanıcının mevcut fizik ayarı korunur.
 
