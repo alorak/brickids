@@ -7,6 +7,8 @@ import {
   isValidForeignPartData,
   isValidForeignPartList,
 } from "../src/import/foreign-world.ts";
+import { BrickWorld } from "../src/engine/world.ts";
+import { catalog } from "../src/engine/catalog.ts";
 
 const sample = {
   id: -1,
@@ -116,6 +118,40 @@ test("foreign parts create standalone coarse colliders when physics is attached"
   foreign.remove(-1);
   assert.equal(part.collider, undefined);
   physics.free();
+});
+
+test("native snapDown treats a foreign standalone collider as a physical surface", async () => {
+  const scene = new Scene();
+  const native = new BrickWorld(scene, () => {});
+  await native.init();
+
+  const foreign = new ForeignLDrawWorld(scene, false);
+  foreign.attachPhysics(native.world);
+  const obstacle = foreign.add({ ...sample, p: [0, 0.5, 0] });
+  assert.ok(obstacle.collider);
+
+  const held = native.add(
+    catalog.find((part) => part.id === "1x1")!,
+    "#C91A09",
+    new Vector3(0, 5, 0),
+  );
+  native.grab(held.id);
+
+  assert.ok(native.snapDown(held.id, new Vector3(0, 100, 0)));
+  const foreignSupportedY = held.position.y;
+  assert.ok(
+    foreignSupportedY > 1.2,
+    "foreign collider should hold the native brick above the baseplate",
+  );
+
+  foreign.transform(obstacle.id, new Vector3(3, 0.5, 0));
+  assert.ok(native.snapDown(held.id, new Vector3(0, 100, 0)));
+  assert.ok(
+    Math.abs(held.position.y - 0.6) < 0.08,
+    "moving the foreign obstacle away should expose the baseplate again",
+  );
+
+  native.world.free();
 });
 
 test("attaching physics after restore creates colliders for existing foreign parts", async () => {
