@@ -147,10 +147,12 @@ export class ForeignLDrawWorld {
         const loader = new LDrawLoader();
         loader.setConditionalLineMaterial(LDrawConditionalLineMaterial);
         loader.setPartsLibraryPath(LDRAW_LIBRARY);
+        loader.addDefaultMaterials();
         try {
           await loader.preloadMaterials(`${LDRAW_LIBRARY}LDConfig.ldr`);
         } catch {
-          loader.addDefaultMaterials();
+          // The default main/edge materials are still enough for a visible
+          // part; fixed library colors may fall back until connectivity returns.
         }
         const path = libraryFile(file)
           .split("/")
