@@ -117,8 +117,10 @@ const world = new BrickWorld(scene, (v) => audio.play(v));
 const foreignWorld = new ForeignLDrawWorld(scene);
 const scenePartCount = () => world.bricks.length + foreignWorld.parts.length;
 type SelectablePart = Brick | ForeignLDrawPart;
-const isForeignPart = (part: SelectablePart | null): part is ForeignLDrawPart =>
-  part?.kind === "foreign";
+const isForeignPart = (
+  part: SelectablePart | null,
+): part is ForeignLDrawPart =>
+  !!part && "kind" in part && part.kind === "foreign";
 let selected: SelectablePart | null = null,
   currentColor = colors[0],
   panelOpen = true,
