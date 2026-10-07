@@ -66,9 +66,20 @@ function clean(n: number) {
   return Number(value.toFixed(6)).toString();
 }
 
-function directColor(hex: string) {
+const standardColors: Record<string, number> = {
+  "#05131D": 0, // Black
+  "#0055BF": 1, // Blue
+  "#237841": 2, // Green / Dark Green
+  "#008F9B": 3, // Dark Turquoise
+  "#C91A09": 4, // Red
+  "#F2CD37": 14, // Yellow
+  "#FE8A18": 25, // Orange
+};
+
+function ldrawColor(hex: string) {
   if (!/^#[0-9a-f]{6}$/i.test(hex)) throw new Error(`Invalid colour: ${hex}`);
-  return `0x2${hex.slice(1).toUpperCase()}`;
+  const normalized = hex.toUpperCase();
+  return String(standardColors[normalized] ?? `0x2${normalized.slice(1)}`);
 }
 
 function ldrawVector(v: Vector3) {
@@ -115,7 +126,7 @@ export function brickToLDrawLine(brick: SerializedBrick) {
 
   return [
     "1",
-    directColor(brick.color),
+    ldrawColor(brick.color),
     clean(ldrawPosition.x),
     clean(ldrawPosition.y),
     clean(ldrawPosition.z),
