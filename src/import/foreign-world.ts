@@ -126,7 +126,10 @@ export class ForeignLDrawWorld {
   readonly parts: ForeignLDrawPart[] = [];
   private visualCache = new Map<string, Promise<T.Group>>();
 
-  constructor(private scene: T.Scene) {}
+  constructor(
+    private scene: T.Scene,
+    private loadVisuals = true,
+  ) {}
 
   get(id: number) {
     return this.parts.find((part) => part.id === id);
@@ -201,7 +204,7 @@ export class ForeignLDrawWorld {
     root.add(placeholder(part.color));
     this.scene.add(root);
     this.parts.push(part);
-    void this.hydrate(part);
+    if (this.loadVisuals) void this.hydrate(part);
     return part;
   }
 
