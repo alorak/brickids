@@ -43,8 +43,8 @@ export type ImportedLDrawScene = {
     id: number;
     spec: string;
     color: string;
-    p: number[];
-    q: number[];
+    p: [number, number, number];
+    q: [number, number, number, number];
   }>;
   links: ReconstructedLink[];
   foreign: ForeignLDrawPartData[];
