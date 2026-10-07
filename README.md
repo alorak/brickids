@@ -31,12 +31,12 @@ The current version is intentionally more toy-like and less tool-like than the u
 
 ### Parts
 
-There are currently **16 simplified part types**:
+There are currently **30 simplified part types**:
 
 | Family | Parts |
 | --- | --- |
-| Bricks | 1×2, 1×4, 2×2, 2×4 |
-| Plates | 1×2, 1×4, 2×2, 2×4 |
+| Bricks | 1×1, 1×2, 1×3, 1×4, 1×6, 1×8, 2×2, 2×3, 2×4, 2×6, 2×8 |
+| Plates | 1×1, 1×2, 1×3, 1×4, 1×6, 1×8, 2×2, 2×3, 2×4, 2×6, 2×8 |
 | Tiles | 1×2, 2×2 |
 | Round | 1×1 brick, 1×1 plate |
 | Slopes | 2×2 slope, 1×1 cheese slope |
@@ -137,7 +137,7 @@ The saved scene is restored on the next launch in the same browser/profile.
 
 The scene menu supports JSON import/export for moving native brickids scenes between browsers or keeping external backups. It also supports **LDraw `.ldr` import and export**.
 
-Current LDraw import is intentionally conservative: the 16 native brickids part mappings are imported with position, rotation, and color; unsupported `.dat` references are skipped and reported instead of aborting the whole file. Direct RGB colors are supported, and a set of common standard LDraw colors is mapped to brickids colors.
+Current LDraw import is intentionally conservative: the **30 native brickids part mappings** are imported with position, rotation, and color; unsupported `.dat` references are skipped and reported instead of aborting the whole file. Common rectangular brick/plate families now include 1×1, 1×3, 1×6, 1×8, 2×3, 2×6, and 2×8 in addition to the original sizes. Direct RGB colors are supported, and a set of common standard LDraw colors is mapped to brickids colors.
 
 `.mpd` files and embedded `0 FILE` submodels are supported. Submodel references are recursively flattened, parent/child transforms are composed, and LDraw color `16` inheritance is resolved across nesting levels. Cyclic submodels and excessive nesting are rejected. The flattened import still has no reconstructed brick-to-brick joint graph, so physics is switched off after import to preserve the layout.
 
