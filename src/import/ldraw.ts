@@ -1,5 +1,5 @@
 import { Matrix3, Matrix4, Quaternion, Vector3 } from "three";
-import { ldrawParts, type LDrawScene } from "../export/ldraw";
+import { ldrawParts } from "../export/ldraw";
 
 const LDU_PER_STUD = 20;
 
@@ -33,8 +33,20 @@ const standardColors = new Map<number, string>([
   [25, "#FE8A18"], // Orange
 ]);
 
+export type ImportedLDrawScene = {
+  version: 1;
+  bricks: Array<{
+    id: number;
+    spec: string;
+    color: string;
+    p: number[];
+    q: number[];
+  }>;
+  links: [];
+};
+
 export type LDrawImportReport = {
-  scene: LDrawScene;
+  scene: ImportedLDrawScene;
   imported: number;
   skipped: number;
   unsupportedParts: string[];
@@ -142,10 +154,11 @@ export function importLDraw(source: string): LDrawImportReport {
   if (/^\s*0\s+FILE\s+/im.test(source))
     throw new Error("MPD is not supported yet");
 
-  const bricks: LDrawScene["bricks"] = [];
+  const bricks: ImportedLDrawScene["bricks"] = [];
   const unsupportedParts = new Set<string>();
   const unsupportedColors = new Set<string>();
   let ignoredGeometryLines = 0;
+  let skipped = 0;
 
   for (const raw of source.replace(/\r\n?/g, "\n").split("\n")) {
     const line = raw.trim();
@@ -161,6 +174,7 @@ export function importLDraw(source: string): LDrawImportReport {
     const parsed = parseType1(line, bricks.length + 1);
     if ("unsupportedPart" in parsed) {
       unsupportedParts.add(parsed.unsupportedPart);
+      skipped++;
       continue;
     }
     if (parsed.unsupportedColor) unsupportedColors.add(parsed.unsupportedColor);
@@ -172,9 +186,9 @@ export function importLDraw(source: string): LDrawImportReport {
     throw new Error("No LDraw parts found");
 
   return {
-    scene: { version: 1, bricks, links: [] } as LDrawScene,
+    scene: { version: 1, bricks, links: [] },
     imported: bricks.length,
-    skipped: unsupportedParts.size,
+    skipped,
     unsupportedParts: [...unsupportedParts].sort(),
     unsupportedColors: [...unsupportedColors].sort(),
     ignoredGeometryLines,
