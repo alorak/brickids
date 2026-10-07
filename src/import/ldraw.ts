@@ -54,6 +54,13 @@ export type LDrawImportReport = {
   ignoredGeometryLines: number;
 };
 
+type ParsedType1 =
+  | { unsupportedPart: string }
+  | {
+      brick: ImportedLDrawScene["bricks"][number];
+      unsupportedColor: string | null;
+    };
+
 function normalizePartFile(value: string) {
   return value.trim().replace(/\\/g, "/").split("/").pop()!.toLowerCase();
 }
@@ -109,7 +116,7 @@ function brickidsRotation(values: number[], yaw = 0) {
   return total.multiply(partYaw.invert()).normalize();
 }
 
-function parseType1(line: string, id: number) {
+function parseType1(line: string, id: number): ParsedType1 {
   const tokens = line.trim().split(/\s+/);
   if (tokens.length < 15 || tokens[0] !== "1") throw new Error("Malformed LDraw type-1 line");
 
