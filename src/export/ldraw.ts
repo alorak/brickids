@@ -59,6 +59,22 @@ export const ldrawParts: Record<string, LDrawPart> = {
     origin: [-0.5, 0.2, -0.5],
   },
   "arch-1x4": { file: "3659.dat", height: 1.2 },
+
+  // Common rectangular brick and plate families.
+  "1x1": { file: "3005.dat", height: 1.2 },
+  "1x3": { file: "3622.dat", height: 1.2 },
+  "1x6": { file: "3009.dat", height: 1.2 },
+  "1x8": { file: "3008.dat", height: 1.2 },
+  "2x3": { file: "3002.dat", height: 1.2 },
+  "2x6": { file: "2456.dat", height: 1.2 },
+  "2x8": { file: "3007.dat", height: 1.2 },
+  "plate-1x1": { file: "3024.dat", height: 0.4 },
+  "plate-1x3": { file: "3623.dat", height: 0.4 },
+  "plate-1x6": { file: "3666.dat", height: 0.4 },
+  "plate-1x8": { file: "3460.dat", height: 0.4 },
+  "plate-2x3": { file: "3021.dat", height: 0.4 },
+  "plate-2x6": { file: "3795.dat", height: 0.4 },
+  "plate-2x8": { file: "3034.dat", height: 0.4 },
 };
 
 function clean(n: number) {
