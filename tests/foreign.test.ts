@@ -174,6 +174,29 @@ test("foreign snapDown settles on the baseplate instead of preserving pointer he
   native.world.free();
 });
 
+test("foreign snapDown settles on top of a native brick collider", async () => {
+  const scene = new Scene();
+  const native = new BrickWorld(scene, () => {});
+  await native.init();
+  native.add(
+    catalog.find((part) => part.id === "2x2")!,
+    "#237841",
+    new Vector3(0, 0.6, 0),
+  );
+
+  const foreign = new ForeignLDrawWorld(scene, false);
+  foreign.attachPhysics(native.world);
+  const part = foreign.add({ ...sample, p: [0, 6, 0] });
+
+  assert.ok(foreign.snapDown(part.id, new Vector3(0, 100, 0)));
+  assert.ok(
+    part.position.y > 1.55 && part.position.y < 1.9,
+    "foreign part should settle above the native brick body/studs",
+  );
+
+  native.world.free();
+});
+
 test("foreign drop settles on the first foreign physical surface below", async () => {
   await R.init();
   const physics = new R.World({ x: 0, y: -24, z: 0 });
