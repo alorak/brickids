@@ -80,10 +80,109 @@ test("skips unsupported parts but reports occurrence count and names", () => {
   assert.deepEqual(result.unsupportedParts, ["3005.dat"]);
 });
 
-test("rejects MPD for now instead of partially importing submodels", () => {
+test("imports an MPD submodel and inherits its parent color", () => {
+  const result = importLDraw([
+    "0 FILE main.ldr",
+    "1 4 40 0 20 1 0 0 0 1 0 0 0 1 child.ldr",
+    "0 FILE child.ldr",
+    "1 16 0 -24 0 1 0 0 0 1 0 0 0 1 3004.dat",
+  ].join("\n"));
+
+  assert.equal(result.imported, 1);
+  assert.equal(result.submodels, 1);
+  assert.equal(result.maxDepth, 1);
+  assert.equal(result.scene.bricks[0].color, "#C91A09");
+  assert.deepEqual(result.scene.bricks[0].p, [2, 0.6, 1]);
+});
+
+test("instantiates one submodel more than once with independent inherited colors", () => {
+  const result = importLDraw([
+    "0 FILE main.ldr",
+    "1 4 0 0 0 1 0 0 0 1 0 0 0 1 child.ldr",
+    "1 1 40 0 0 1 0 0 0 1 0 0 0 1 child.ldr",
+    "0 FILE child.ldr",
+    "1 16 0 -24 0 1 0 0 0 1 0 0 0 1 3004.dat",
+  ].join("\n"));
+
+  assert.equal(result.imported, 2);
+  assert.deepEqual(
+    result.scene.bricks.map((brick) => brick.color),
+    ["#C91A09", "#0055BF"],
+  );
+  assert.deepEqual(result.scene.bricks[0].p, [0, 0.6, 0]);
+  assert.deepEqual(result.scene.bricks[1].p, [2, 0.6, 0]);
+});
+
+test("composes nested MPD translation and rotation transforms", () => {
+  const result = importLDraw([
+    "0 FILE main.ldr",
+    "1 4 0 0 0 0 0 1 0 1 0 -1 0 0 child.ldr",
+    "0 FILE child.ldr",
+    "1 16 20 -24 0 1 0 0 0 1 0 0 0 1 3004.dat",
+  ].join("\n"));
+
+  assert.equal(result.imported, 1);
+  assert.deepEqual(result.scene.bricks[0].p.map((n) => Math.round(n * 1e6) / 1e6), [0, 0.6, -1]);
+  const expected = new Quaternion().setFromAxisAngle(
+    new Vector3(0, 1, 0),
+    Math.PI / 2,
+  );
+  assert.ok(sameQuaternion(result.scene.bricks[0].q, expected.toArray()));
+});
+
+test("nested submodels propagate inherited colors through multiple levels", () => {
+  const result = importLDraw([
+    "0 FILE main.ldr",
+    "1 1 0 0 0 1 0 0 0 1 0 0 0 1 child.ldr",
+    "0 FILE child.ldr",
+    "1 16 0 0 0 1 0 0 0 1 0 0 0 1 grandchild.ldr",
+    "0 FILE grandchild.ldr",
+    "1 16 0 -24 0 1 0 0 0 1 0 0 0 1 3004.dat",
+  ].join("\n"));
+
+  assert.equal(result.submodels, 2);
+  assert.equal(result.maxDepth, 2);
+  assert.equal(result.scene.bricks[0].color, "#0055BF");
+});
+
+test("explicit part colors override inherited MPD colors", () => {
+  const result = importLDraw([
+    "0 FILE main.ldr",
+    "1 4 0 0 0 1 0 0 0 1 0 0 0 1 child.ldr",
+    "0 FILE child.ldr",
+    "1 14 0 -24 0 1 0 0 0 1 0 0 0 1 3004.dat",
+  ].join("\n"));
+
+  assert.equal(result.scene.bricks[0].color, "#F2CD37");
+});
+
+test("rejects cyclic MPD submodel references", () => {
   assert.throws(
-    () => importLDraw("0 FILE main.ldr\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 child.ldr"),
-    /MPD is not supported yet/,
+    () =>
+      importLDraw([
+        "0 FILE main.ldr",
+        "1 16 0 0 0 1 0 0 0 1 0 0 0 1 child.ldr",
+        "0 FILE child.ldr",
+        "1 16 0 0 0 1 0 0 0 1 0 0 0 1 main.ldr",
+      ].join("\n")),
+    /Cyclic MPD submodel reference/,
+  );
+});
+
+test("rejects excessively deep MPD nesting", () => {
+  const lines: string[] = [];
+  for (let i = 0; i < 34; i++) {
+    lines.push(`0 FILE level-${i}.ldr`);
+    if (i < 33)
+      lines.push(
+        `1 16 0 0 0 1 0 0 0 1 0 0 0 1 level-${i + 1}.ldr`,
+      );
+    else
+      lines.push("1 4 0 -24 0 1 0 0 0 1 0 0 0 1 3004.dat");
+  }
+  assert.throws(
+    () => importLDraw(lines.join("\n")),
+    /submodel nesting is too deep/,
   );
 });
 

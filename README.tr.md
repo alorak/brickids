@@ -137,7 +137,9 @@ Kaydedilen sahne aynı tarayıcı/profil ile sonraki açılışta otomatik olara
 
 Sahne menüsünde JSON import/export desteği bulunur; böylece brickids sahneleri başka tarayıcıya taşınabilir veya harici yedek olarak saklanabilir. Ayrıca **LDraw `.ldr` içe ve dışa aktarma** desteği vardır.
 
-İlk LDraw import sürümü bilinçli olarak temkinlidir: brickids'in mevcut 16 yerel parça eşlemesi konum, dönüş ve renk bilgileriyle içe alınır; desteklenmeyen `.dat` referansları tüm dosyayı bozmak yerine atlanır ve kullanıcıya raporlanır. Direct RGB renkleri ve yaygın standart LDraw renklerinin bir bölümü desteklenir. Düz LDR dosyalarında brickids bağlantı/joint grafiği henüz yeniden kurulmadığı için modelin dağılmaması amacıyla import sonrasında fizik kapatılır. MPD/submodel desteği sonraki adımdır.
+LDraw import bilinçli olarak temkinlidir: brickids'in mevcut 16 yerel parça eşlemesi konum, dönüş ve renk bilgileriyle içe alınır; desteklenmeyen `.dat` referansları tüm dosyayı bozmak yerine atlanır ve kullanıcıya raporlanır. Direct RGB renkleri ve yaygın standart LDraw renklerinin bir bölümü desteklenir.
+
+`.mpd` dosyaları ve gömülü `0 FILE` submodel'leri desteklenir. Submodel referansları recursive olarak flatten edilir, parent/child transformları birleştirilir ve LDraw renk `16` kalıtımı iç içe seviyelerde çözülür. Döngüsel submodel referansları ve aşırı derin iç içe yapılar reddedilir. Flatten edilmiş modelde brickids bağlantı/joint grafiği henüz yeniden kurulmadığı için modelin dağılmaması amacıyla import sonrasında fizik kapatılır.
 
 LDraw export tarafında brickids konumları, dönüşleri, desteklenen parça tipleri ve renkleri type-1 parça referanslarına çevrilir; hızlı palet standart LDraw renk kodlarını, diğer renkler ise direct RGB değerlerini kullanır.
 
