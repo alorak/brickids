@@ -155,7 +155,7 @@ function cancelTurn() {
   rotationAxis.visible = false;
 }
 function beginTurn(to: T.Quaternion, label: string) {
-  if (!selected || turning || pressing) return;
+  if (!selected || isForeignPart(selected) || turning || pressing) return;
   if (!world.held.has(selected.id)) world.grab(selected.id);
   const from = selected.rotation.clone();
   if (from.angleTo(to) < 1e-6) return;
@@ -197,7 +197,7 @@ function seamColor(link: Connection) {
 }
 function updateSeams() {
   const members =
-    selected && !turning && !pressing
+    selected && !isForeignPart(selected) && !turning && !pressing
       ? component(selected.id, world.links)
       : new Set<number>();
   // Keep every real LEGO-to-LEGO contact slightly legible. The selected
@@ -539,6 +539,15 @@ function height(amount: number) {
 }
 function translateSelected(delta: T.Vector3) {
   if (!selected || pressing || turning) return;
+  if (isForeignPart(selected)) {
+    foreignWorld.transform(
+      selected.id,
+      selected.position.clone().add(delta),
+      selected.rotation,
+    );
+    dirty = true;
+    return;
+  }
   const wasHeld = world.held.has(selected.id);
   if (!wasHeld) world.grab(selected.id);
   if (!world.transform(selected.id, selected.position.clone().add(delta)))
@@ -548,7 +557,6 @@ function translateSelected(delta: T.Vector3) {
 }
 function rotate(axis: "x" | "y" | "z") {
   if (!selected || pressing || turning) return;
-  if (!world.held.has(selected.id)) world.grab(selected.id);
   const q = new T.Quaternion()
     .setFromAxisAngle(
       new T.Vector3(
@@ -559,6 +567,14 @@ function rotate(axis: "x" | "y" | "z") {
       Math.PI / 2,
     )
     .multiply(selected.rotation);
+
+  if (isForeignPart(selected)) {
+    foreignWorld.transform(selected.id, selected.position, q);
+    dirty = true;
+    return;
+  }
+
+  if (!world.held.has(selected.id)) world.grab(selected.id);
   beginTurn(
     q,
     text(axis === "y" ? "axisY" : axis === "x" ? "axisX" : "axisZ") + " · +90°",
@@ -566,16 +582,21 @@ function rotate(axis: "x" | "y" | "z") {
 }
 function upright() {
   if (!selected || pressing || turning) return;
-  if (!world.held.has(selected.id)) world.grab(selected.id);
   const e = new T.Euler().setFromQuaternion(selected.rotation, "YXZ");
   const q = new T.Quaternion().setFromAxisAngle(
     new T.Vector3(0, 1, 0),
     (Math.round(e.y / (Math.PI / 2)) * Math.PI) / 2,
   );
+  if (isForeignPart(selected)) {
+    foreignWorld.transform(selected.id, selected.position, q);
+    dirty = true;
+    return;
+  }
+  if (!world.held.has(selected.id)) world.grab(selected.id);
   beginTurn(q, text("upright"));
 }
 function startPress() {
-  if (!selected || pressing || turning) return;
+  if (!selected || isForeignPart(selected) || pressing || turning) return;
   const c = world.candidate(selected.id);
   if (!c) {
     toast(text("notReady"));
