@@ -66,6 +66,10 @@ export function partPreviews() {
     if (cache.has(key)) return cache.get(key)!;
     const mesh = brickMesh(spec, color);
     scene.add(mesh);
+    // Keep long imported/native families (1×8, 2×8, etc.) inside the
+    // thumbnail instead of clipping them against the fixed orthographic frame.
+    camera.zoom = Math.min(1, 4.8 / Math.max(spec.cols, spec.rows));
+    camera.updateProjectionMatrix();
     renderer.render(scene, camera);
     const image = cropTransparent();
     cache.set(key, image);
