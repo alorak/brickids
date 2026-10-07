@@ -137,9 +137,11 @@ Kaydedilen sahne aynı tarayıcı/profil ile sonraki açılışta otomatik olara
 
 Sahne menüsünde JSON import/export desteği bulunur; böylece brickids sahneleri başka tarayıcıya taşınabilir veya harici yedek olarak saklanabilir. Ayrıca **LDraw `.ldr` içe ve dışa aktarma** desteği vardır.
 
-LDraw import bilinçli olarak temkinlidir: brickids'in mevcut **30 yerel parça eşlemesi** konum, dönüş ve renk bilgileriyle içe alınır; desteklenmeyen `.dat` referansları tüm dosyayı bozmak yerine atlanır ve kullanıcıya raporlanır. Yaygın dikdörtgen brick/plate ailelerine artık eski ölçülere ek olarak 1×1, 1×3, 1×6, 1×8, 2×3, 2×6 ve 2×8 de dahildir. Direct RGB renkleri ve yaygın standart LDraw renklerinin bir bölümü desteklenir.
+LDraw import artık iki katmanlıdır. Brickids'in mevcut **30 native parça eşlemesi** tam brickids davranışıyla içe alınır; yaygın dikdörtgen brick/plate ailelerine eski ölçülere ek olarak 1×1, 1×3, 1×6, 1×8, 2×3, 2×6 ve 2×8 de dahildir. Native olmayan fakat rigid transform kullanan LDraw referansları artık atılmak yerine **foreign parça** olarak korunur. Mümkün olduğunda resmi LDraw geometrisi sabitlenmiş bir CDN mirror üzerinden yüklenir; yükleme başarısız olursa veya uygulama offline ise referans kaybolmasın diye görünür bir placeholder kalır. Direct RGB renkleri ve yaygın standart LDraw renklerinin bir bölümü desteklenir.
 
 `.mpd` dosyaları ve gömülü `0 FILE` submodel'leri desteklenir. Submodel referansları recursive olarak flatten edilir, parent/child transformları birleştirilir ve LDraw renk `16` kalıtımı iç içe seviyelerde çözülür. Döngüsel submodel referansları ve aşırı derin iç içe yapılar reddedilir.
+
+Foreign parçalar seçilebilir, sürüklenebilir, döndürülebilir ve silinebilir; localStorage/JSON sahne kayıtlarında korunur ve LDraw export sırasında özgün `.dat` referansı ile renk token'ı yeniden yazılır. Bu aşamada foreign parçalar bilinçli olarak fizik, collision, snap veya connector reconstruction sistemine katılmaz; bu sonraki geliştirme katmanıdır.
 
 Flatten işleminden sonra desteklenen native parçalar için **stud/socket bağlantı grafiği yeniden oluşturulur**. Bunun için normal brickids bağlantılarında kullanılan strict `mating` kuralları aynen kullanılır; yalnızca imported transform zaten geçerli connector pozundaysa joint oluşturulur, yakın veya neredeyse hizalı parçalar import sırasında zorla snap edilmez. Geniş bir parçanın birden fazla desteğe oturduğu durumlarda tüm geçerli bağlantılar korunur. Import sonrasında fizik artık zorla kapatılmaz; kullanıcının mevcut fizik ayarı korunur.
 
