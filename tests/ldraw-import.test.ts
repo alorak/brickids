@@ -77,6 +77,81 @@ test("imports newly native common brick and plate families", () => {
   );
 });
 
+test("reconstructs a strict stud/socket connection after LDraw import", () => {
+  const output = exportLDraw({
+    version: 1,
+    bricks: [
+      { id: 1, spec: "2x2", color: "#C91A09", p: [0, 0.6, 0], q: [0, 0, 0, 1] },
+      { id: 2, spec: "2x4", color: "#0055BF", p: [0, 1.8, 0], q: [0, 0, 0, 1] },
+    ],
+  });
+  const result = importLDraw(output);
+
+  assert.equal(result.reconstructedConnections, 1);
+  assert.deepEqual(result.scene.links, [{ a: 2, b: 1, studs: 4 }]);
+});
+
+test("reconstructs multiple supports for one wide imported brick", () => {
+  const output = exportLDraw({
+    version: 1,
+    bricks: [
+      { id: 1, spec: "2x2", color: "#C91A09", p: [-1, 0.6, 0], q: [0, 0, 0, 1] },
+      { id: 2, spec: "2x2", color: "#F2CD37", p: [1, 0.6, 0], q: [0, 0, 0, 1] },
+      { id: 3, spec: "2x4", color: "#0055BF", p: [0, 1.8, 0], q: [0, 0, 0, 1] },
+    ],
+  });
+  const result = importLDraw(output);
+
+  assert.equal(result.reconstructedConnections, 2);
+  assert.deepEqual(result.scene.links, [
+    { a: 3, b: 1, studs: 4 },
+    { a: 3, b: 2, studs: 4 },
+  ]);
+});
+
+test("does not reconstruct a connection for a near-miss placement", () => {
+  const output = exportLDraw({
+    version: 1,
+    bricks: [
+      { id: 1, spec: "2x2", color: "#C91A09", p: [0, 0.6, 0], q: [0, 0, 0, 1] },
+      { id: 2, spec: "2x2", color: "#0055BF", p: [0.1, 1.8, 0], q: [0, 0, 0, 1] },
+    ],
+  });
+  const result = importLDraw(output);
+
+  assert.equal(result.reconstructedConnections, 0);
+  assert.deepEqual(result.scene.links, []);
+});
+
+test("does not connect a brick on top of a smooth tile", () => {
+  const output = exportLDraw({
+    version: 1,
+    bricks: [
+      { id: 1, spec: "tile-2x2", color: "#C91A09", p: [0, 0.2, 0], q: [0, 0, 0, 1] },
+      { id: 2, spec: "2x2", color: "#0055BF", p: [0, 1.0, 0], q: [0, 0, 0, 1] },
+    ],
+  });
+  const result = importLDraw(output);
+
+  assert.equal(result.reconstructedConnections, 0);
+});
+
+test("reconstructs connections through flattened MPD submodels", () => {
+  const result = importLDraw([
+    "0 FILE main.ldr",
+    "1 4 0 0 0 1 0 0 0 1 0 0 0 1 lower.ldr",
+    "1 1 0 -24 0 1 0 0 0 1 0 0 0 1 upper.ldr",
+    "0 FILE lower.ldr",
+    "1 16 0 -24 0 1 0 0 0 1 0 0 0 1 3003.dat",
+    "0 FILE upper.ldr",
+    "1 16 0 -24 0 1 0 0 0 1 0 0 0 1 3003.dat",
+  ].join("\n"));
+
+  assert.equal(result.imported, 2);
+  assert.equal(result.reconstructedConnections, 1);
+  assert.deepEqual(result.scene.links, [{ a: 2, b: 1, studs: 4 }]);
+});
+
 test("keeps unknown colors visible and reports them", () => {
   const result = importLDraw(
     "1 16 0 -24 0 1 0 0 0 1 0 0 0 1 3004.dat",
