@@ -745,6 +745,8 @@ function ldrawImportMessage(report: LDrawImportReport) {
       message += ` ${report.skipped} desteklenmeyen parça atlandı${names ? `: ${names}${more ? ` +${more}` : ""}` : "."}`;
     if (report.submodels)
       message += ` ${report.submodels} submodel çözüldü.`;
+    if (report.reconstructedConnections)
+      message += ` ${report.reconstructedConnections} bağlantı yeniden kuruldu.`;
     if (report.unsupportedColors.length)
       message += ` ${report.unsupportedColors.length} renk nötr renkle gösterildi.`;
     return message;
@@ -754,6 +756,8 @@ function ldrawImportMessage(report: LDrawImportReport) {
     message += ` ${report.skipped} unsupported parts skipped${names ? `: ${names}${more ? ` +${more}` : ""}` : "."}`;
   if (report.submodels)
     message += ` ${report.submodels} submodels resolved.`;
+  if (report.reconstructedConnections)
+    message += ` ${report.reconstructedConnections} connections reconstructed.`;
   if (report.unsupportedColors.length)
     message += ` ${report.unsupportedColors.length} colors shown with a neutral fallback.`;
   return message;
@@ -774,10 +778,9 @@ $("#file").onchange = async () => {
     if (isLDraw) {
       const report = importLDraw(source);
       if (!report.imported) throw Error("No supported LDraw parts");
-      // LDraw/MPD carries transforms but no brickids joint graph. Keep the
-      // flattened imported layout stable until connection reconstruction exists.
-      world.setPhysicsEnabled(false);
-      renderPhysicsButton();
+      // LDraw/MPD stores transforms rather than application joints. The
+      // importer reconstructs strict native stud/socket links before restore,
+      // so the user's current physics setting can be preserved.
       world.restore(report.scene);
       select(null);
       localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(world.serialize()));
