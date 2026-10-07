@@ -501,8 +501,31 @@ export class BrickWorld {
         Math.abs(r[7]) * h.z
       );
     };
+    // Foreign LDraw obstacles and the baseplate are standalone Rapier
+    // colliders, so they do not appear in this.bricks. Include their cuboid
+    // AABB tops when choosing a safe cast origin; otherwise snapDown may start
+    // already intersecting a tall standalone obstacle.
+    this.world.propagateModifiedBodyPositionsToColliders();
+    let standaloneTop = 0;
+    this.world.forEachCollider((collider) => {
+      if (collider.parent() || collider.shape.type !== R.ShapeType.Cuboid)
+        return;
+      const half = collider.halfExtents(),
+        q = new T.Quaternion().copy(collider.rotation()),
+        r = new T.Matrix3().setFromMatrix4(
+          new T.Matrix4().makeRotationFromQuaternion(q),
+        ).elements,
+        projectedY =
+          Math.abs(r[1]) * half.x +
+          Math.abs(r[4]) * half.y +
+          Math.abs(r[7]) * half.z;
+      standaloneTop = Math.max(
+        standaloneTop,
+        collider.translation().y + projectedY,
+      );
+    });
     const stationaryTop = Math.max(
-      0,
+      standaloneTop,
       ...this.bricks
         .filter((b) => !this.held.has(b.id))
         .map((b) => topOf(b)),
@@ -510,7 +533,7 @@ export class BrickWorld {
     const bottomOffset =
       Math.min(...[...this.held].map((i) => bottomOf(this.obb(this.get(i))))) -
       root.position.y;
-    // Start completely above every stationary brick, then sweep vertically.
+    // Start completely above every stationary physical obstacle, then sweep vertically.
     const start = new T.Vector3(
       target.x,
       stationaryTop - bottomOffset + 0.5,
@@ -527,8 +550,8 @@ export class BrickWorld {
 
     // World scene queries use Rapier's broad phase, which is refreshed by a
     // physics step. Dragging can happen between steps, so use direct pairwise
-    // shape casts instead. First propagate body poses to their colliders.
-    this.world.propagateModifiedBodyPositionsToColliders();
+    // shape casts instead. Collider poses were propagated above before the safe
+    // cast origin was calculated.
 
     // Cheap X/Z pruning keeps the pairwise casts local even in a large model.
     const projectedHalf = (box: OBB) => {
