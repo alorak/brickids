@@ -14,6 +14,11 @@ import { component } from "./engine/connections";
 import { messages, type Language } from "./i18n";
 import { exportLDraw } from "./export/ldraw";
 import { importLDraw, type LDrawImportReport } from "./import/ldraw";
+import {
+  ForeignLDrawWorld,
+  isValidForeignPartList,
+  type ForeignLDrawPart,
+} from "./import/foreign-world";
 import { setupMobile } from "./mobile";
 import type { TouchPoint } from "./input/touch";
 import "./style.css";
@@ -109,7 +114,12 @@ const applyGround = groundController(
 applyGround("baseplate");
 
 const world = new BrickWorld(scene, (v) => audio.play(v));
-let selected: Brick | null = null,
+const foreignWorld = new ForeignLDrawWorld(scene);
+const scenePartCount = () => world.bricks.length + foreignWorld.parts.length;
+type SelectablePart = Brick | ForeignLDrawPart;
+const isForeignPart = (part: SelectablePart | null): part is ForeignLDrawPart =>
+  part?.kind === "foreign";
+let selected: SelectablePart | null = null,
   currentColor = colors[0],
   panelOpen = true,
   toastTimer = 0,
@@ -146,7 +156,7 @@ function cancelTurn() {
   rotationAxis.visible = false;
 }
 function beginTurn(to: T.Quaternion, label: string) {
-  if (!selected || turning || pressing) return;
+  if (!selected || isForeignPart(selected) || turning || pressing) return;
   if (!world.held.has(selected.id)) world.grab(selected.id);
   const from = selected.rotation.clone();
   if (from.angleTo(to) < 1e-6) return;
@@ -188,7 +198,7 @@ function seamColor(link: Connection) {
 }
 function updateSeams() {
   const members =
-    selected && !turning && !pressing
+    selected && !isForeignPart(selected) && !turning && !pressing
       ? component(selected.id, world.links)
       : new Set<number>();
   // Keep every real LEGO-to-LEGO contact slightly legible. The selected
@@ -348,12 +358,25 @@ $("#more-parts").onclick = () => {
   morePartsOpen = !morePartsOpen;
   renderCards();
 };
-function select(b: Brick | null) {
+function select(b: SelectablePart | null) {
   cancelTurn();
   cancelPress();
   if (selected?.id !== b?.id) mobile?.selected();
   selected = b;
   dirty = true;
+}
+function escapeHtml(value: string) {
+  return value.replace(
+    /[&<>"']/g,
+    (char) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[char]!,
+  );
 }
 function renderSelection() {
   const b = selected;
@@ -362,6 +385,43 @@ function renderSelection() {
     $("#selection-content").innerHTML = "";
     return;
   }
+
+  if (isForeignPart(b)) {
+    $("#selection-content").innerHTML = `
+      <div class="selection-minimal foreign-selection">
+        <div class="selected-part-thumb selected-part-thumb-large foreign-part-thumb" title="${escapeHtml(b.file)}">
+          <span>LDRAW</span>
+          <strong>${escapeHtml(b.file.split("/").pop() ?? b.file)}</strong>
+        </div>
+        <button class="selection-icon-button separate-icon" disabled
+          aria-label="${text("detach")}" title="${text("detach")}">
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <rect x="7" y="14" width="12" height="12" rx="2"></rect>
+            <rect x="29" y="22" width="12" height="12" rx="2"></rect>
+            <path d="M20 18h8M24 14l4 4-4 4M28 30h-8M24 26l-4 4 4 4"></path>
+          </svg>
+        </button>
+        <button id="quick-rotate" class="selection-icon-button rotate-icon"
+          aria-label="${text("rotate")}" title="${text("rotate")}">
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M35 16a14 14 0 1 0 2.5 15"></path>
+            <path d="M35 8v9h-9"></path>
+          </svg>
+        </button>
+        <button id="quick-delete" class="selection-icon-button delete-icon"
+          aria-label="${text("delete")}" title="${text("delete")}">
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M15 17h18l-1.5 22h-15z"></path>
+            <path d="M12 17h24M20 12h8l2 5H18zM21 22v11M27 22v11"></path>
+          </svg>
+        </button>
+      </div>`;
+    $("#quick-rotate").onclick = () => rotate("y");
+    $("#quick-delete").onclick = deleteSelected;
+    mobile?.refreshSelection();
+    return;
+  }
+
   const held = world.held.has(b.id),
     lowerLink = world.lowerConnection(b.id),
     links = world.links.filter((l) => component(b.id, world.links).has(l.a));
@@ -432,7 +492,14 @@ function renderSelection() {
   mobile?.refreshSelection();
 }
 function separate(link: Connection) {
-  if (!selected || !world.links.includes(link) || turning || pressing) return;
+  if (
+    !selected ||
+    isForeignPart(selected) ||
+    !world.links.includes(link) ||
+    turning ||
+    pressing
+  )
+    return;
   endDrag();
   if (!world.detach(link, selected.id)) toast(text("cycle"));
   else {
@@ -453,11 +520,15 @@ function confirmDeleteSelected() {
   const id = pendingDeleteId;
   pendingDeleteId = null;
   $<HTMLDialogElement>("#delete-dialog").close();
-  if (id === null || !world.bricks.some((brick) => brick.id === id)) return;
+  if (id === null) return;
+  const foreign = foreignWorld.get(id);
+  const native = world.bricks.find((brick) => brick.id === id);
+  if (!foreign && !native) return;
   cancelPress();
   endDrag();
   if (selected?.id === id) select(null);
-  world.remove(id);
+  if (foreign) foreignWorld.remove(id);
+  else world.remove(id);
   toast(text("deleted"));
 }
 function cancelDeleteSelected() {
@@ -469,6 +540,15 @@ function height(amount: number) {
 }
 function translateSelected(delta: T.Vector3) {
   if (!selected || pressing || turning) return;
+  if (isForeignPart(selected)) {
+    foreignWorld.transform(
+      selected.id,
+      selected.position.clone().add(delta),
+      selected.rotation,
+    );
+    dirty = true;
+    return;
+  }
   const wasHeld = world.held.has(selected.id);
   if (!wasHeld) world.grab(selected.id);
   if (!world.transform(selected.id, selected.position.clone().add(delta)))
@@ -478,7 +558,6 @@ function translateSelected(delta: T.Vector3) {
 }
 function rotate(axis: "x" | "y" | "z") {
   if (!selected || pressing || turning) return;
-  if (!world.held.has(selected.id)) world.grab(selected.id);
   const q = new T.Quaternion()
     .setFromAxisAngle(
       new T.Vector3(
@@ -489,6 +568,14 @@ function rotate(axis: "x" | "y" | "z") {
       Math.PI / 2,
     )
     .multiply(selected.rotation);
+
+  if (isForeignPart(selected)) {
+    foreignWorld.transform(selected.id, selected.position, q);
+    dirty = true;
+    return;
+  }
+
+  if (!world.held.has(selected.id)) world.grab(selected.id);
   beginTurn(
     q,
     text(axis === "y" ? "axisY" : axis === "x" ? "axisX" : "axisZ") + " · +90°",
@@ -496,16 +583,21 @@ function rotate(axis: "x" | "y" | "z") {
 }
 function upright() {
   if (!selected || pressing || turning) return;
-  if (!world.held.has(selected.id)) world.grab(selected.id);
   const e = new T.Euler().setFromQuaternion(selected.rotation, "YXZ");
   const q = new T.Quaternion().setFromAxisAngle(
     new T.Vector3(0, 1, 0),
     (Math.round(e.y / (Math.PI / 2)) * Math.PI) / 2,
   );
+  if (isForeignPart(selected)) {
+    foreignWorld.transform(selected.id, selected.position, q);
+    dirty = true;
+    return;
+  }
+  if (!world.held.has(selected.id)) world.grab(selected.id);
   beginTurn(q, text("upright"));
 }
 function startPress() {
-  if (!selected || pressing || turning) return;
+  if (!selected || isForeignPart(selected) || pressing || turning) return;
   const c = world.candidate(selected.id);
   if (!c) {
     toast(text("notReady"));
@@ -696,8 +788,22 @@ $("#physics").onclick = () => {
   renderPhysicsButton();
   dirty = true;
 };
+function serializeScene() {
+  return {
+    ...world.serialize(),
+    foreign: foreignWorld.serialize(),
+  };
+}
+function restoreScene(data: any) {
+  const foreign = data?.foreign ?? [];
+  const nativeCount = Array.isArray(data?.bricks) ? data.bricks.length : 0;
+  if (!isValidForeignPartList(foreign) || nativeCount + foreign.length > 250)
+    throw new Error("Invalid scene");
+  world.restore(data);
+  foreignWorld.restore(foreign);
+}
 function saveSceneLocal() {
-  localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(world.serialize()));
+  localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(serializeScene()));
   toast(text("savedLocal"));
   $<HTMLDialogElement>("#scene-dialog").close();
 }
@@ -718,7 +824,7 @@ function downloadSceneFile(content: string, type: string, filename: string) {
 }
 $("#scene-export").onclick = () => {
   downloadSceneFile(
-    JSON.stringify(world.serialize(), null, 2),
+    JSON.stringify(serializeScene(), null, 2),
     "application/json",
     "brickids-scene.json",
   );
@@ -727,7 +833,7 @@ $("#scene-export").onclick = () => {
 $("#scene-export-ldr").onclick = () => {
   try {
     downloadSceneFile(
-      exportLDraw(world.serialize()),
+      exportLDraw(serializeScene()),
       "text/plain;charset=utf-8",
       "brickids-scene.ldr",
     );
@@ -745,6 +851,8 @@ function ldrawImportMessage(report: LDrawImportReport) {
       message += ` ${report.skipped} desteklenmeyen parça atlandı${names ? `: ${names}${more ? ` +${more}` : ""}` : "."}`;
     if (report.submodels)
       message += ` ${report.submodels} submodel çözüldü.`;
+    if (report.preservedForeign)
+      message += ` ${report.preservedForeign} foreign LDraw parçası korundu.`;
     if (report.reconstructedConnections)
       message += ` ${report.reconstructedConnections} bağlantı yeniden kuruldu.`;
     if (report.unsupportedColors.length)
@@ -756,6 +864,8 @@ function ldrawImportMessage(report: LDrawImportReport) {
     message += ` ${report.skipped} unsupported parts skipped${names ? `: ${names}${more ? ` +${more}` : ""}` : "."}`;
   if (report.submodels)
     message += ` ${report.submodels} submodels resolved.`;
+  if (report.preservedForeign)
+    message += ` ${report.preservedForeign} foreign LDraw parts preserved.`;
   if (report.reconstructedConnections)
     message += ` ${report.reconstructedConnections} connections reconstructed.`;
   if (report.unsupportedColors.length)
@@ -777,18 +887,19 @@ $("#file").onchange = async () => {
 
     if (isLDraw) {
       const report = importLDraw(source);
-      if (!report.imported) throw Error("No supported LDraw parts");
+      if (!report.imported && !report.preservedForeign)
+        throw Error("No importable LDraw parts");
       // LDraw/MPD stores transforms rather than application joints. The
       // importer reconstructs strict native stud/socket links before restore,
       // so the user's current physics setting can be preserved.
-      world.restore(report.scene);
+      restoreScene(report.scene);
       select(null);
-      localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(world.serialize()));
+      localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(serializeScene()));
       toast(ldrawImportMessage(report));
     } else {
-      world.restore(JSON.parse(source));
+      restoreScene(JSON.parse(source));
       select(null);
-      localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(world.serialize()));
+      localStorage.setItem(SAVED_SCENE_KEY, JSON.stringify(serializeScene()));
       toast(text("loaded"));
     }
     $<HTMLDialogElement>("#scene-dialog").close();
@@ -802,6 +913,7 @@ $("#scene-new").onclick = () => {
   cancelInteraction();
   cancelPress();
   world.clear();
+  foreignWorld.clear();
   select(null);
   localStorage.removeItem(SAVED_SCENE_KEY);
   $<HTMLDialogElement>("#scene-dialog").close();
@@ -812,6 +924,7 @@ $("#demo").onclick = () => {
   cancelInteraction();
   cancelPress();
   world.clear();
+  foreignWorld.clear();
   const lower = world.add(catalog[2], colors[2], new T.Vector3(0, 0.6, 0));
   const upper = world.add(catalog[1], colors[0], new T.Vector3(0, 2.2, 0));
   world.grab(upper.id);
@@ -824,6 +937,7 @@ const ray = new T.Raycaster(),
   mouse = new T.Vector2();
 let drag: null | {
   id: number;
+  foreign: boolean;
   pointerId: number;
   startX: number;
   startY: number;
@@ -839,6 +953,22 @@ function cast(e: { clientX: number; clientY: number }) {
   );
   ray.setFromCamera(mouse, camera);
 }
+function pickableObjects() {
+  return [
+    ...world.bricks.map((brick) => brick.mesh),
+    ...foreignWorld.pickObjects(),
+  ];
+}
+function selectableFromObject(object: T.Object3D): SelectablePart | null {
+  let current: T.Object3D | null = object;
+  while (current) {
+    if (current.userData.brick) return current.userData.brick as Brick;
+    if (current.userData.foreignPart)
+      return current.userData.foreignPart as ForeignLDrawPart;
+    current = current.parent;
+  }
+  return null;
+}
 function workspacePoint(e: { clientX: number; clientY: number }) {
   cast(e);
   return (
@@ -849,7 +979,7 @@ function workspacePoint(e: { clientX: number; clientY: number }) {
   );
 }
 function placeLibraryPart(specId: string, color: string, target: T.Vector3) {
-  if (world.bricks.length >= 250) {
+  if (scenePartCount() >= 250) {
     toast(text("limit"));
     return null;
   }
@@ -954,7 +1084,7 @@ window.addEventListener(
     // sidebar, create the real Three.js brick and move that actual object.
     if (state.brickId === null) {
       if (pointerInsideLibrary(event)) return;
-      if (world.bricks.length >= 250) {
+      if (scenePartCount() >= 250) {
         toast(text("limit"));
         cancelLibraryPointerDrag();
         return;
@@ -1034,23 +1164,19 @@ function pickSeam() {
     [...seamLines.values()].filter((l) => l.visible && l.userData.interactive),
     false,
   );
-  const front = ray.intersectObjects(
-    world.bricks.map((b) => b.mesh),
-    true,
-  )[0]?.distance;
+  const front = ray.intersectObjects(pickableObjects(), true)[0]?.distance;
   const hit = hits.find((h) => visibleSeamHit(h.distance, front));
   return hit?.object.userData.link as Connection | undefined;
 }
 function separateBrickAtPoint(e: { clientX: number; clientY: number }) {
   cast(e);
-  const hit = ray.intersectObjects(world.bricks.map((b) => b.mesh), true)[0];
+  const hit = ray.intersectObjects(pickableObjects(), true)[0];
   if (!hit) return false;
-  let obj: T.Object3D = hit.object;
-  while (!obj.userData.brick && obj.parent) obj = obj.parent;
-  const brick = obj.userData.brick as Brick | undefined;
-  if (!brick) return false;
-  select(brick);
-  const below = world.lowerConnection(brick.id);
+  const part = selectableFromObject(hit.object);
+  if (!part) return false;
+  select(part);
+  if (isForeignPart(part)) return false;
+  const below = world.lowerConnection(part.id);
   if (!below) return false;
   audio.unlock();
   separate(below);
@@ -1079,25 +1205,30 @@ function beginDrag(e: TouchPoint): boolean {
   if (pressing || turning) return false;
   cast(e);
   seamClick = null;
-  const hit = ray.intersectObjects(world.bricks.map((b) => b.mesh), true)[0];
+  const hit = ray.intersectObjects(pickableObjects(), true)[0];
   if (!hit) {
-    if (selected && world.held.has(selected.id)) world.drop(selected.id, true);
+    if (selected && !isForeignPart(selected) && world.held.has(selected.id))
+      world.drop(selected.id, true);
     select(null);
     return false;
   }
-  let obj: T.Object3D = hit.object;
-  while (!obj.userData.brick && obj.parent) obj = obj.parent;
-  const b = obj.userData.brick as Brick;
-  const plane = new T.Plane(new T.Vector3(0, 1, 0), -b.position.y);
+  const part = selectableFromObject(hit.object);
+  if (!part) return false;
+  const plane = new T.Plane(new T.Vector3(0, 1, 0), -part.position.y);
   const p = ray.ray.intersectPlane(plane, new T.Vector3());
   if (!p) return false;
-  select(b);
+  select(part);
   controls.enabled = false;
   // Keep the horizontal plane fixed: height controls change only Y.
   drag = {
-    id: b.id, pointerId: e.pointerId,
-    startX: e.clientX, startY: e.clientY, moving: false,
-    offset: b.position.clone().sub(p), plane,
+    id: part.id,
+    foreign: isForeignPart(part),
+    pointerId: e.pointerId,
+    startX: e.clientX,
+    startY: e.clientY,
+    moving: false,
+    offset: part.position.clone().sub(p),
+    plane,
   };
   return true;
 }
@@ -1105,16 +1236,28 @@ function moveDrag(e: TouchPoint) {
   if (!drag || drag.pointerId !== e.pointerId || turning || pressing) return;
   cast(e);
   if (!drag.moving && Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > 4) {
-    world.grab(drag.id);
+    if (!drag.foreign) world.grab(drag.id);
     drag.moving = true;
     dirty = true;
   }
   if (drag.moving) {
-    const b = world.get(drag.id);
-    // The gesture plane supplies only X/Z. The engine resolves Y by casting the
-    // held assembly straight down onto the first surface below the pointer.
-    const target = dragTarget(ray.ray, drag.plane, drag.offset, 0);
-    if (target) world.snapDown(b.id, target);
+    if (drag.foreign) {
+      const part = foreignWorld.get(drag.id);
+      if (!part) return;
+      const target = dragTarget(
+        ray.ray,
+        drag.plane,
+        drag.offset,
+        part.position.y,
+      );
+      if (target) foreignWorld.transform(part.id, target, part.rotation);
+    } else {
+      const b = world.get(drag.id);
+      // The gesture plane supplies only X/Z. The engine resolves Y by casting the
+      // held assembly straight down onto the first surface below the pointer.
+      const target = dragTarget(ray.ray, drag.plane, drag.offset, 0);
+      if (target) world.snapDown(b.id, target);
+    }
   }
 }
 // Install capture handlers BEFORE the mouse handlers and keep touches out of OrbitControls.
@@ -1157,7 +1300,12 @@ canvas.addEventListener("pointermove", (e) => {
   moveDrag(e);
 });
 function endDrag() {
-  const movedId = drag?.moving && world.held.has(drag.id) ? drag.id : null;
+  const state = drag;
+  const movedId =
+    state?.moving && !state.foreign && world.held.has(state.id)
+      ? state.id
+      : null;
+  const movedForeign = !!state?.moving && state.foreign;
   drag = null;
   controls.enabled = true;
   if (movedId !== null) {
@@ -1165,9 +1313,9 @@ function endDrag() {
     // finish a nearby valid stud/socket alignment; otherwise just return the
     // piece to normal gravity and contacts.
     const connected = world.drop(movedId, true);
-    if (connected) {
-      audio.play(0.8, false, true);
-    }
+    if (connected) audio.play(0.8, false, true);
+    dirty = true;
+  } else if (movedForeign) {
     dirty = true;
   }
 }
@@ -1315,7 +1463,13 @@ function frame(now: number) {
       }
     }
   }
-  if (selected && !world.bricks.includes(selected)) select(null);
+  if (
+    selected &&
+    (isForeignPart(selected)
+      ? !foreignWorld.parts.includes(selected)
+      : !world.bricks.includes(selected))
+  )
+    select(null);
   if (dirty) {
     renderSelection();
     dirty = false;
@@ -1323,20 +1477,22 @@ function frame(now: number) {
   updateSeams();
   outline.visible = !!selected;
   if (selected) {
-    outline.setFromObject(selected.mesh);
-    const candidate = turning ? null : world.candidate(selected.id);
+    outline.setFromObject(isForeignPart(selected) ? selected.object : selected.mesh);
+    const candidate =
+      isForeignPart(selected) || turning ? null : world.candidate(selected.id);
     (outline.material as T.LineBasicMaterial).color.set(
-      candidate ? 0x46866b : 0x8c9591,
+      candidate ? 0x46866b : isForeignPart(selected) ? 0x4778a8 : 0x8c9591,
     );
-    $("#alignment").textContent = world.held.has(selected.id)
-      ? turning
-        ? turning.label
-        : pressing
-          ? text("pressing")
-          : candidate
-            ? mobile?.enabled ? mobile.text("ready") : text("ready")
-            : ""
-      : "";
+    $("#alignment").textContent =
+      !isForeignPart(selected) && world.held.has(selected.id)
+        ? turning
+          ? turning.label
+          : pressing
+            ? text("pressing")
+            : candidate
+              ? mobile?.enabled ? mobile.text("ready") : text("ready")
+              : ""
+        : "";
     $("#alignment").classList.toggle("ready", !!candidate);
     $("#press")?.toggleAttribute("disabled", !candidate);
     ghost.visible = !!candidate;
@@ -1376,7 +1532,7 @@ world
     const saved = localStorage.getItem(SAVED_SCENE_KEY);
     if (saved) {
       try {
-        world.restore(JSON.parse(saved));
+        restoreScene(JSON.parse(saved));
       } catch {
         localStorage.removeItem(SAVED_SCENE_KEY);
         starter();

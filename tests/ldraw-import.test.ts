@@ -215,15 +215,53 @@ test("keeps unknown colors visible and reports them", () => {
   assert.deepEqual(result.unsupportedColors, ["16"]);
 });
 
-test("skips unsupported parts but reports occurrence count and names", () => {
+test("preserves unsupported rigid parts as foreign LDraw references", () => {
   const result = importLDraw([
     "1 4 0 -24 0 1 0 0 0 1 0 0 0 1 3004.dat",
     "1 1 20 -24 0 1 0 0 0 1 0 0 0 1 3006.dat",
     "1 14 40 -24 0 1 0 0 0 1 0 0 0 1 3006.dat",
   ].join("\n"));
+
   assert.equal(result.imported, 1);
-  assert.equal(result.skipped, 2);
-  assert.deepEqual(result.unsupportedParts, ["3006.dat"]);
+  assert.equal(result.preservedForeign, 2);
+  assert.equal(result.skipped, 0);
+  assert.deepEqual(result.foreignParts, ["3006.dat"]);
+  assert.deepEqual(
+    result.scene.foreign.map((part) => ({
+      id: part.id,
+      file: part.file,
+      colorToken: part.colorToken,
+      p: part.p,
+    })),
+    [
+      { id: -1, file: "3006.dat", colorToken: "1", p: [1, 1.2, 0] },
+      { id: -2, file: "3006.dat", colorToken: "14", p: [2, 1.2, 0] },
+    ],
+  );
+});
+
+test("imports a foreign-only LDraw file instead of rejecting it", () => {
+  const result = importLDraw(
+    "1 4 0 -24 0 1 0 0 0 1 0 0 0 1 3006.dat",
+  );
+  assert.equal(result.imported, 0);
+  assert.equal(result.preservedForeign, 1);
+  assert.equal(result.scene.foreign[0].file, "3006.dat");
+});
+
+test("foreign LDraw references survive import-export round trip", () => {
+  const source =
+    "1 0x2123ABC 40 -48 -20 0 0 1 0 1 0 -1 0 0 3006.dat";
+  const imported = importLDraw(source);
+  const exported = exportLDraw(imported.scene);
+  const type1 = exported
+    .split("\r\n")
+    .find((line) => line.startsWith("1 0x2123ABC"));
+
+  assert.equal(
+    type1,
+    "1 0x2123ABC 40 -48 -20 0 0 1 0 1 0 -1 0 0 3006.dat",
+  );
 });
 
 test("imports an MPD submodel and inherits its parent color", () => {
@@ -330,6 +368,23 @@ test("rejects excessively deep MPD nesting", () => {
     () => importLDraw(lines.join("\n")),
     /submodel nesting is too deep/,
   );
+});
+
+test("preserves foreign transforms and inherited MPD colors after flattening", () => {
+  const result = importLDraw([
+    "0 FILE main.ldr",
+    "1 1 40 0 20 0 0 1 0 1 0 -1 0 0 child.ldr",
+    "0 FILE child.ldr",
+    "1 16 20 -24 0 1 0 0 0 1 0 0 0 1 3006.dat",
+  ].join("\n"));
+
+  assert.equal(result.preservedForeign, 1);
+  const foreign = result.scene.foreign[0];
+  assert.equal(foreign.colorToken, "1");
+  assert.equal(foreign.color, "#0055BF");
+  assert.equal(foreign.file, "3006.dat");
+  assert.ok(foreign.p.every(Number.isFinite));
+  assert.ok(foreign.q.every(Number.isFinite));
 });
 
 test("rejects scaled or mirrored part transforms for now", () => {

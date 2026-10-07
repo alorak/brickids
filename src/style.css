@@ -933,6 +933,30 @@ dialog p {
   object-fit: contain;
   transform: scale(1.2);
 }
+.foreign-part-thumb {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  padding: 10px;
+  overflow: hidden;
+  background: linear-gradient(145deg, #eef6ff, #dbeaf8);
+  border: 1px dashed #8eb2d3;
+  color: #315c82;
+  text-align: center;
+}
+.foreign-part-thumb span {
+  font: 700 9px/1 "Manrope", sans-serif;
+  letter-spacing: 0.14em;
+  opacity: 0.7;
+}
+.foreign-part-thumb strong {
+  max-width: 100%;
+  font: 700 11px/1.2 "DM Sans", sans-serif;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .selection-icon-button {
   display: grid;
   place-items: center;

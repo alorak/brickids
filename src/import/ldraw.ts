@@ -1,6 +1,7 @@
 import { Matrix3, Matrix4, Quaternion, Vector3 } from "three";
 import { ldrawParts } from "../export/ldraw";
 import { reconstructConnections, type ReconstructedLink } from "./reconstruct-connections";
+import type { ForeignLDrawPartData } from "../ldraw/foreign-types";
 
 const LDU_PER_STUD = 20;
 const MAX_SUBMODEL_DEPTH = 32;
@@ -46,6 +47,7 @@ export type ImportedLDrawScene = {
     q: number[];
   }>;
   links: ReconstructedLink[];
+  foreign: ForeignLDrawPartData[];
 };
 
 export type LDrawImportReport = {
@@ -59,6 +61,8 @@ export type LDrawImportReport = {
   maxDepth: number;
   reconstructedConnections: number;
   connectionCandidatePairs: number;
+  preservedForeign: number;
+  foreignParts: string[];
 };
 
 type Type1Reference = {
@@ -76,6 +80,10 @@ type ParsedType1 =
   | { unsupportedPart: string }
   | {
       brick: ImportedLDrawScene["bricks"][number];
+      unsupportedColor: string | null;
+    }
+  | {
+      foreign: ForeignLDrawPartData;
       unsupportedColor: string | null;
     };
 
@@ -176,10 +184,34 @@ function brickidsRotation(matrix: Matrix3, yaw = 0) {
   return total.multiply(partYaw.invert()).normalize();
 }
 
-function parseKnownPart(reference: FlattenedReference, id: number): ParsedType1 {
+function parseKnownPart(
+  reference: FlattenedReference,
+  brickId: number,
+  foreignId: number,
+): ParsedType1 {
   const file = normalizePartFile(reference.file);
   const spec = reverseParts.get(file);
-  if (!spec) return { unsupportedPart: file };
+  const parsedColor = parseColor(reference.colorToken);
+
+  if (!spec) {
+    const rotation = brickidsRotation(reference.matrix);
+    if (!rotation) return { unsupportedPart: `${file} (non-rigid transform)` };
+    return {
+      foreign: {
+        id: foreignId,
+        file: normalizeModelFile(reference.file),
+        color: parsedColor.color,
+        colorToken: reference.colorToken,
+        p: [
+          reference.position.x / LDU_PER_STUD,
+          -reference.position.y / LDU_PER_STUD,
+          reference.position.z / LDU_PER_STUD,
+        ],
+        q: rotation.toArray(),
+      },
+      unsupportedColor: parsedColor.unsupported,
+    };
+  }
 
   const part = ldrawParts[spec];
   const rotation = brickidsRotation(reference.matrix, part.yaw);
@@ -195,10 +227,9 @@ function parseKnownPart(reference: FlattenedReference, id: number): ParsedType1 
     new Vector3(ox, oy, oz).applyQuaternion(rotation),
   );
 
-  const parsedColor = parseColor(reference.colorToken);
   return {
     brick: {
-      id,
+      id: brickId,
       spec,
       color: parsedColor.color,
       p: position.toArray(),
@@ -381,29 +412,41 @@ export function importLDraw(source: string): LDrawImportReport {
   const flattened = mpd ? flattenMpd(mpd) : flatReferences(source);
 
   const bricks: ImportedLDrawScene["bricks"] = [];
+  const foreign: ForeignLDrawPartData[] = [];
   const unsupportedParts = new Set<string>();
+  const foreignParts = new Set<string>();
   const unsupportedColors = new Set<string>();
   let skipped = 0;
 
   for (const reference of flattened.references) {
-    const parsed = parseKnownPart(reference, bricks.length + 1);
+    const parsed = parseKnownPart(
+      reference,
+      bricks.length + 1,
+      -(foreign.length + 1),
+    );
     if ("unsupportedPart" in parsed) {
       unsupportedParts.add(parsed.unsupportedPart);
       skipped++;
       continue;
     }
     if (parsed.unsupportedColor) unsupportedColors.add(parsed.unsupportedColor);
-    bricks.push(parsed.brick);
-    if (bricks.length > 250) throw new Error("Too many supported parts");
+    if ("foreign" in parsed) {
+      foreign.push(parsed.foreign);
+      foreignParts.add(parsed.foreign.file);
+    } else {
+      bricks.push(parsed.brick);
+    }
+    if (bricks.length + foreign.length > 250)
+      throw new Error("Too many imported parts");
   }
 
-  if (!bricks.length && unsupportedParts.size === 0)
+  if (!bricks.length && !foreign.length && unsupportedParts.size === 0)
     throw new Error("No LDraw parts found");
 
   const reconstruction = reconstructConnections(bricks);
 
   return {
-    scene: { version: 1, bricks, links: reconstruction.links },
+    scene: { version: 1, bricks, links: reconstruction.links, foreign },
     imported: bricks.length,
     skipped,
     unsupportedParts: [...unsupportedParts].sort(),
@@ -413,5 +456,7 @@ export function importLDraw(source: string): LDrawImportReport {
     maxDepth: flattened.maxDepth,
     reconstructedConnections: reconstruction.links.length,
     connectionCandidatePairs: reconstruction.candidatePairs,
+    preservedForeign: foreign.length,
+    foreignParts: [...foreignParts].sort(),
   };
 }

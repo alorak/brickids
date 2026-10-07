@@ -1,7 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Quaternion, Vector3 } from "three";
-import { brickToLDrawLine, exportLDraw, ldrawParts } from "../src/export/ldraw.ts";
+import {
+  brickToLDrawLine,
+  exportLDraw,
+  foreignToLDrawLine,
+  ldrawParts,
+} from "../src/export/ldraw.ts";
 import { catalog } from "../src/engine/catalog.ts";
 
 const brick = (
@@ -93,6 +98,42 @@ test("LDraw export uses CRLF and emits one type-1 line per brick", () => {
   assert.match(output, /3004\.dat/);
   assert.match(output, /3023\.dat/);
   assert.match(output, /1 1 40 -8 0/);
+});
+
+test("foreign LDraw references re-export their original file and color token", () => {
+  const line = foreignToLDrawLine({
+    id: -1,
+    file: "3006.dat",
+    color: "#0055BF",
+    colorToken: "1",
+    p: [1, 1.2, -2],
+    q: [0, 0, 0, 1],
+  });
+  assert.equal(
+    line,
+    "1 1 20 -24 -40 1 0 0 0 1 0 0 0 1 3006.dat",
+  );
+});
+
+test("scene export includes preserved foreign references", () => {
+  const output = exportLDraw({
+    version: 1,
+    bricks: [brick("1x2", [0, 0.6, 0])],
+    foreign: [
+      {
+        id: -1,
+        file: "3006.dat",
+        color: "#123ABC",
+        colorToken: "0x2123ABC",
+        p: [2, 1.2, 0],
+        q: [0, 0, 0, 1],
+      },
+    ],
+  });
+  const type1 = output.split("\r\n").filter((line) => line.startsWith("1 "));
+  assert.equal(type1.length, 2);
+  assert.match(type1[1], /^1 0x2123ABC 40 -24 0 /);
+  assert.match(type1[1], / 3006\.dat$/);
 });
 
 test("non-quick colors fall back to LDraw direct RGB", () => {
