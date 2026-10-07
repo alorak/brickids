@@ -61,6 +61,22 @@ test("supports LDraw direct RGB colors", () => {
   assert.deepEqual(result.unsupportedColors, []);
 });
 
+test("imports newly native common brick and plate families", () => {
+  const result = importLDraw([
+    "1 4 0 -24 0 1 0 0 0 1 0 0 0 1 3005.dat",
+    "1 1 40 -8 0 1 0 0 0 1 0 0 0 1 3024.dat",
+    "1 14 80 -24 0 1 0 0 0 1 0 0 0 1 3007.dat",
+    "1 2 120 -8 0 1 0 0 0 1 0 0 0 1 3034.dat",
+  ].join("\n"));
+
+  assert.equal(result.imported, 4);
+  assert.equal(result.skipped, 0);
+  assert.deepEqual(
+    result.scene.bricks.map((brick) => brick.spec),
+    ["1x1", "plate-1x1", "2x8", "plate-2x8"],
+  );
+});
+
 test("keeps unknown colors visible and reports them", () => {
   const result = importLDraw(
     "1 16 0 -24 0 1 0 0 0 1 0 0 0 1 3004.dat",
@@ -72,12 +88,12 @@ test("keeps unknown colors visible and reports them", () => {
 test("skips unsupported parts but reports occurrence count and names", () => {
   const result = importLDraw([
     "1 4 0 -24 0 1 0 0 0 1 0 0 0 1 3004.dat",
-    "1 1 20 -24 0 1 0 0 0 1 0 0 0 1 3005.dat",
-    "1 14 40 -24 0 1 0 0 0 1 0 0 0 1 3005.dat",
+    "1 1 20 -24 0 1 0 0 0 1 0 0 0 1 3006.dat",
+    "1 14 40 -24 0 1 0 0 0 1 0 0 0 1 3006.dat",
   ].join("\n"));
   assert.equal(result.imported, 1);
   assert.equal(result.skipped, 2);
-  assert.deepEqual(result.unsupportedParts, ["3005.dat"]);
+  assert.deepEqual(result.unsupportedParts, ["3006.dat"]);
 });
 
 test("imports an MPD submodel and inherits its parent color", () => {

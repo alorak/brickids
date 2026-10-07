@@ -31,12 +31,12 @@ Güncel sürüm, upstream başlangıç noktasına göre bilinçli olarak daha ç
 
 ### Parçalar
 
-Şu anda **16 sadeleştirilmiş parça tipi** bulunuyor:
+Şu anda **30 sadeleştirilmiş parça tipi** bulunuyor:
 
 | Aile | Parçalar |
 | --- | --- |
-| Brick | 1×2, 1×4, 2×2, 2×4 |
-| Plate | 1×2, 1×4, 2×2, 2×4 |
+| Brick | 1×1, 1×2, 1×3, 1×4, 1×6, 1×8, 2×2, 2×3, 2×4, 2×6, 2×8 |
+| Plate | 1×1, 1×2, 1×3, 1×4, 1×6, 1×8, 2×2, 2×3, 2×4, 2×6, 2×8 |
 | Tile | 1×2, 2×2 |
 | Yuvarlak | 1×1 brick, 1×1 plate |
 | Eğimli | 2×2 slope, 1×1 cheese slope |
@@ -137,7 +137,7 @@ Kaydedilen sahne aynı tarayıcı/profil ile sonraki açılışta otomatik olara
 
 Sahne menüsünde JSON import/export desteği bulunur; böylece brickids sahneleri başka tarayıcıya taşınabilir veya harici yedek olarak saklanabilir. Ayrıca **LDraw `.ldr` içe ve dışa aktarma** desteği vardır.
 
-LDraw import bilinçli olarak temkinlidir: brickids'in mevcut 16 yerel parça eşlemesi konum, dönüş ve renk bilgileriyle içe alınır; desteklenmeyen `.dat` referansları tüm dosyayı bozmak yerine atlanır ve kullanıcıya raporlanır. Direct RGB renkleri ve yaygın standart LDraw renklerinin bir bölümü desteklenir.
+LDraw import bilinçli olarak temkinlidir: brickids'in mevcut **30 yerel parça eşlemesi** konum, dönüş ve renk bilgileriyle içe alınır; desteklenmeyen `.dat` referansları tüm dosyayı bozmak yerine atlanır ve kullanıcıya raporlanır. Yaygın dikdörtgen brick/plate ailelerine artık eski ölçülere ek olarak 1×1, 1×3, 1×6, 1×8, 2×3, 2×6 ve 2×8 de dahildir. Direct RGB renkleri ve yaygın standart LDraw renklerinin bir bölümü desteklenir.
 
 `.mpd` dosyaları ve gömülü `0 FILE` submodel'leri desteklenir. Submodel referansları recursive olarak flatten edilir, parent/child transformları birleştirilir ve LDraw renk `16` kalıtımı iç içe seviyelerde çözülür. Döngüsel submodel referansları ve aşırı derin iç içe yapılar reddedilir. Flatten edilmiş modelde brickids bağlantı/joint grafiği henüz yeniden kurulmadığı için modelin dağılmaması amacıyla import sonrasında fizik kapatılır.
 
