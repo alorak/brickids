@@ -1528,13 +1528,13 @@ dialog::backdrop {
   pointer-events: none;
 }
 
-/* Scene menu: four compact actions in one row. */
+/* Scene menu: save/import/export actions stay compact and scannable. */
 .scene-dialog {
-  width: min(700px, calc(100vw - 30px));
+  width: min(840px, calc(100vw - 30px));
   padding: 30px 32px 24px;
 }
 .scene-menu-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   margin-top: 30px;
 }
@@ -1645,6 +1645,7 @@ dialog::backdrop {
     padding: 24px 14px 18px;
   }
   .scene-menu-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 7px;
     margin-top: 34px;
   }
