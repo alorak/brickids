@@ -55,7 +55,7 @@ test("complete BrickLink picker contains 214 unique catalog colors", () => {
 });
 
 test("catalog parts have working bottom sockets, exact engagement and scene round trips", async () => {
-  assert.ok(catalog.length >= 16);
+  assert.ok(catalog.length >= 30);
   assert.equal(new Set(catalog.map((s) => s.id)).size, catalog.length);
   for (const s of catalog.slice(3)) {
     const w = new BrickWorld(new Scene(), () => {});
