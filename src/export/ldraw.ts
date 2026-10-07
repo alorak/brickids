@@ -158,6 +158,9 @@ export function foreignToLDrawLine(part: ForeignLDrawPartData) {
     part.q.length !== 4 ||
     !part.file ||
     part.file.includes("..") ||
+    part.file.startsWith("/") ||
+    part.file.startsWith("\\") ||
+    /[\r\n\0]/.test(part.file) ||
     /^[a-z]+:/i.test(part.file)
   )
     throw new Error("Invalid foreign LDraw part");
