@@ -34,6 +34,18 @@ export function isValidForeignPartData(data: ForeignLDrawPartData) {
   );
 }
 
+export function isValidForeignPartList(
+  value: unknown,
+): value is ForeignLDrawPartData[] {
+  if (!Array.isArray(value) || value.length > 250) return false;
+  const ids = new Set<number>();
+  for (const part of value) {
+    if (!isValidForeignPartData(part) || ids.has(part.id)) return false;
+    ids.add(part.id);
+  }
+  return true;
+}
+
 function libraryFile(file: string) {
   const clean = file.replace(/\\/g, "/").replace(/^\.\//, "");
   if (clean.startsWith("parts/") || clean.startsWith("p/") || clean.startsWith("models/"))
@@ -203,14 +215,9 @@ export class ForeignLDrawWorld {
 
   restore(value: unknown) {
     const data = value === undefined ? [] : value;
-    if (!Array.isArray(data) || data.length > 250 || !data.every(isValidForeignPartData))
+    if (!isValidForeignPartList(data))
       throw new Error("Invalid foreign LDraw scene");
-    const ids = new Set<number>();
-    for (const part of data as ForeignLDrawPartData[]) {
-      if (ids.has(part.id)) throw new Error("Duplicate foreign part id");
-      ids.add(part.id);
-    }
     this.clear();
-    for (const part of data as ForeignLDrawPartData[]) this.add(part);
+    for (const part of data) this.add(part);
   }
 }
