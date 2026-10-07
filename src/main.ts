@@ -854,6 +854,8 @@ function ldrawImportMessage(report: LDrawImportReport) {
       message += ` ${report.skipped} desteklenmeyen parça atlandı${names ? `: ${names}${more ? ` +${more}` : ""}` : "."}`;
     if (report.submodels)
       message += ` ${report.submodels} submodel çözüldü.`;
+    if (report.preservedForeign)
+      message += ` ${report.preservedForeign} foreign LDraw parçası korundu.`;
     if (report.reconstructedConnections)
       message += ` ${report.reconstructedConnections} bağlantı yeniden kuruldu.`;
     if (report.unsupportedColors.length)
@@ -865,6 +867,8 @@ function ldrawImportMessage(report: LDrawImportReport) {
     message += ` ${report.skipped} unsupported parts skipped${names ? `: ${names}${more ? ` +${more}` : ""}` : "."}`;
   if (report.submodels)
     message += ` ${report.submodels} submodels resolved.`;
+  if (report.preservedForeign)
+    message += ` ${report.preservedForeign} foreign LDraw parts preserved.`;
   if (report.reconstructedConnections)
     message += ` ${report.reconstructedConnections} connections reconstructed.`;
   if (report.unsupportedColors.length)
