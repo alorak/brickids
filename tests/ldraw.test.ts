@@ -18,6 +18,27 @@ test("every brickids catalog part has an LDraw mapping", () => {
   );
 });
 
+test("common rectangular families use their standard LDraw part files", () => {
+  const expected = {
+    "1x1": "3005.dat",
+    "1x3": "3622.dat",
+    "1x6": "3009.dat",
+    "1x8": "3008.dat",
+    "2x3": "3002.dat",
+    "2x6": "2456.dat",
+    "2x8": "3007.dat",
+    "plate-1x1": "3024.dat",
+    "plate-1x3": "3623.dat",
+    "plate-1x6": "3666.dat",
+    "plate-1x8": "3460.dat",
+    "plate-2x3": "3021.dat",
+    "plate-2x6": "3795.dat",
+    "plate-2x8": "3034.dat",
+  } as const;
+  for (const [spec, file] of Object.entries(expected))
+    assert.equal(ldrawParts[spec].file, file);
+});
+
 test("standard brick export uses LDU coordinates and standard LDraw colour", () => {
   const line = brickToLDrawLine(brick("2x4", [0, 0.6, 0]));
   assert.equal(
