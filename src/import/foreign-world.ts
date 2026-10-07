@@ -1,6 +1,5 @@
 import * as T from "three";
-import { LDrawLoader } from "three/addons/loaders/LDrawLoader.js";
-import { LDrawConditionalLineMaterial } from "three/addons/materials/LDrawConditionalLineMaterial.js";
+import type { LDrawLoader } from "three/addons/loaders/LDrawLoader.js";
 import type { ForeignLDrawPartData } from "../ldraw/foreign-types";
 
 // Pin the CDN mirror so imported foreign geometry cannot change underneath a
@@ -145,6 +144,11 @@ export class ForeignLDrawWorld {
     let cached = this.visualCache.get(key);
     if (!cached) {
       cached = (async () => {
+        const [{ LDrawLoader }, { LDrawConditionalLineMaterial }] =
+          await Promise.all([
+            import("three/addons/loaders/LDrawLoader.js"),
+            import("three/addons/materials/LDrawConditionalLineMaterial.js"),
+          ]);
         const loader = new LDrawLoader();
         loader.setConditionalLineMaterial(LDrawConditionalLineMaterial);
         loader.setPartsLibraryPath(LDRAW_LIBRARY);
