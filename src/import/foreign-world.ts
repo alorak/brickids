@@ -81,6 +81,22 @@ function placeholder(color: string) {
   return group;
 }
 
+function disposePlaceholder(root: T.Group) {
+  for (const child of [...root.children]) {
+    if (!child.userData.placeholder) continue;
+    child.traverse((object) => {
+      if (object instanceof T.Mesh || object instanceof T.LineSegments) {
+        object.geometry.dispose();
+        const materials = Array.isArray(object.material)
+          ? object.material
+          : [object.material];
+        for (const material of materials) material.dispose();
+      }
+    });
+    root.remove(child);
+  }
+}
+
 function setMainColor(loader: LDrawLoader, color: string) {
   for (const material of [loader.getMaterial("16"), loader.getMaterial("24")]) {
     const candidate = material as (T.Material & { color?: T.Color }) | null;
@@ -148,6 +164,7 @@ export class ForeignLDrawWorld {
     try {
       const template = await this.template(part.file, part.color);
       if (!this.parts.includes(part)) return;
+      disposePlaceholder(part.object);
       part.object.clear();
       part.object.add(template.clone(true));
       part.loaded = true;
@@ -198,6 +215,7 @@ export class ForeignLDrawWorld {
   remove(id: number) {
     const part = this.get(id);
     if (!part) return;
+    disposePlaceholder(part.object);
     this.scene.remove(part.object);
     this.parts.splice(this.parts.indexOf(part), 1);
   }
