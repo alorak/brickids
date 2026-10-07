@@ -18,7 +18,7 @@ test("every brickids catalog part has an LDraw mapping", () => {
   );
 });
 
-test("standard brick export uses LDU coordinates and direct RGB colour", () => {
+test("standard brick export uses LDU coordinates and standard LDraw colour", () => {
   const line = brickToLDrawLine(brick("2x4", [0, 0.6, 0]));
   assert.equal(
     line,
