@@ -3,6 +3,7 @@ import { ldrawParts } from "../export/ldraw";
 
 const LDU_PER_STUD = 20;
 const MAX_SUBMODEL_DEPTH = 32;
+const MAX_EXPANDED_REFERENCES = 5000;
 
 const reverseParts = new Map<string, string>(
   Object.entries(ldrawParts).map(([spec, part]) => [part.file.toLowerCase(), spec]),
@@ -266,6 +267,7 @@ function flattenMpd(document: MpdDocument) {
   const references: FlattenedReference[] = [];
   let ignoredGeometryLines = 0;
   let maxDepth = 0;
+  let expandedReferences = 0;
   const expandedSubmodels = new Set<string>();
 
   const visit = (
@@ -295,6 +297,10 @@ function flattenMpd(document: MpdDocument) {
         if (["2", "3", "4", "5"].includes(type)) ignoredGeometryLines++;
         continue;
       }
+
+      expandedReferences++;
+      if (expandedReferences > MAX_EXPANDED_REFERENCES)
+        throw new Error("MPD expands to too many references");
 
       const child = parseType1Reference(line);
       const colorToken =
